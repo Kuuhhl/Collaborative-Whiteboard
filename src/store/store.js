@@ -1,25 +1,15 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { createSlice } from '@reduxjs/toolkit';
-
-
-const initialState = {
-  tool: null,
-};
-
-const whiteboardSlice = createSlice({
-  name: 'whiteboard',
-  initialState,
-  reducers: {
-    setToolType: (state, action) => {
-      state.tool = action.payload;
-    },
-  },
-});
-
-export const { setToolType } = whiteboardSlice;
+import { configureStore } from "@reduxjs/toolkit";
+import whiteboardSliceReducer from "../Whiteboard/whiteboardSlice";
 
 export const store = configureStore({
   reducer: {
-    whiteboard: whiteboardSlice.reducer,
+    whiteboard: whiteboardSliceReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoreActions: ["whiteboard/setElements"],
+        ignoredPaths: ["whiteboard.elements"],
+      },
+    }),
 });

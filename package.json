@@ -1,5 +1,6 @@
 {
 	"name": "collaborative-whiteboard",
+        "description": "A platform for collaborative sketching and brainstorming.",
 	"version": "0.1.0",
 	"private": true,
 	"dependencies": {

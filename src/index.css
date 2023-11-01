@@ -1,18 +1,8 @@
-body {
-  margin: 0;
-  padding: 0;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-.menu_container {
-  position: absolute;
-  top: 0;
-  width: 350px;
-  left: calc(50% - 175px);
-  border-bottom-left-radius: 15px;
-  border-bottom-right-radius: 15px;
-  background: #EEEEEE;
-  height: 60px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
+body {
+	margin: 0;
+	padding: 0;
 }

@@ -1,3 +1,7 @@
 export const toolTypes = {
-  RECTANGLE: "RECTANGLE",
+	RECTANGLE: "RECTANGLE",
+	LINE: "LINE",
+	PENCIL: "PENCIL",
+	TEXT: "TEXT",
+	RUBBER: "RUBBER",
 };

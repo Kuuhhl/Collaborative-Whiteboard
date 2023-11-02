@@ -1,0 +1,25 @@
+{
+	"name": "collaborative-whiteboard-backend",
+	"version": "1.0.0",
+	"description": "A platform for collaborative sketching and brainstorming. - Backend",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Kuuhhl/Collaborative-Whiteboard-Backend.git"
+	},
+	"author": "",
+	"bugs": {
+		"url": "https://github.com/Kuuhhl/Collaborative-Whiteboard-Backend/issues"
+	},
+	"homepage": "https://github.com/Kuuhhl/Collaborative-Whiteboard-Backend#readme",
+	"dependencies": {
+		"dotenv": "^16.3.1",
+		"express": "^4.18.2",
+		"mongodb": "^6.2.0",
+		"socket.io": "^4.7.2"
+	}
+}

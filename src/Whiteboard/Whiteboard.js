@@ -58,9 +58,9 @@ const Whiteboard = () => {
 	};
 
 	const handleMouseUp = () => {
-		const selectedElementIndex = elements.findIndex(
-			(el) => el.id === selectedElement.id
-		);
+		// const selectedElementIndex = elements.findIndex(
+		// 	(el) => el.id === selectedElement.id
+		// );
 		setAction(null);
 		setSelectedElement(null);
 	};

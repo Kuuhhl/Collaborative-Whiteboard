@@ -14,7 +14,7 @@
 
 ## Demo
 
-A live demo is available at [https://d2bvxq4llumvox.cloudfront.net/](https://d2bvxq4llumvox.cloudfront.net/).
+A live demo is available at [whiteboard.kuuhhl.live](https://whiteboard.kuuhhl.live/).
 
 ## Features
 

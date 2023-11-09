@@ -95,6 +95,19 @@ const Whiteboard = () => {
 			}
 		}
 	};
+	const handleTouchStart = (event) => {
+		const { clientX, clientY } = event.touches[0];
+		handleMouseDown({ clientX, clientY });
+	};
+
+	const handleTouchEnd = () => {
+		handleMouseUp();
+	};
+
+	const handleTouchMove = (event) => {
+		const { clientX, clientY } = event.touches[0];
+		handleMouseMove({ clientX, clientY });
+	};
 
 	return (
 		<>
@@ -103,6 +116,9 @@ const Whiteboard = () => {
 				onMouseDown={handleMouseDown}
 				onMouseUp={handleMouseUp}
 				onMouseMove={handleMouseMove}
+				onTouchStart={handleTouchStart}
+				onTouchMove={handleTouchMove}
+				onTouchEnd={handleTouchEnd}
 				ref={canvasRef}
 				width={window.innerWidth}
 				height={window.innerHeight}

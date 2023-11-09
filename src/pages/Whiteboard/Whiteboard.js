@@ -100,7 +100,7 @@ const Whiteboard = () => {
 		handleMouseDown({ clientX, clientY });
 	};
 
-	const handleTouchEnd = () => {
+	const handleTouchEnd = (event) => {
 		handleMouseUp();
 	};
 
@@ -113,6 +113,7 @@ const Whiteboard = () => {
 		<>
 			<Menu />
 			<canvas
+				className="touch-none"
 				onMouseDown={handleMouseDown}
 				onMouseUp={handleMouseUp}
 				onMouseMove={handleMouseMove}

@@ -63,9 +63,6 @@ const Whiteboard = () => {
 	};
 
 	const handleMouseUp = () => {
-		// const selectedElementIndex = elements.findIndex(
-		// 	(el) => el.id === selectedElement.id
-		// );
 		setAction(null);
 		setSelectedElement(null);
 	};
@@ -110,8 +107,11 @@ const Whiteboard = () => {
 	};
 
 	return (
-		<>
+		<div className="relative">
 			<Menu />
+			<div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-4">
+				{room && `Room: ${room}`}
+			</div>
 			<canvas
 				className="touch-none"
 				onMouseDown={handleMouseDown}
@@ -124,9 +124,7 @@ const Whiteboard = () => {
 				width={window.innerWidth}
 				height={window.innerHeight}
 			/>
-			<div className="absolute b-0">{room && `Room: ${room}`}</div>
-		</>
+		</div>
 	);
 };
-
 export default Whiteboard;

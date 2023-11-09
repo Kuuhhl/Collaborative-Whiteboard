@@ -1,8 +1,9 @@
 import React, { useRef, useLayoutEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import Menu from "./Menu";
+import { useLocation } from "react-router-dom";
 import rough from "roughjs";
-import { actions, toolTypes } from "../constants";
+import { actions, toolTypes } from "../../constants";
 import { createElement, updateElement, drawElement } from "./utils";
 import { v4 as uuid } from "uuid";
 import { updateElement as updateElementInStore } from "./whiteboardSlice";
@@ -14,6 +15,10 @@ const setSelectedElement = (el) => {
 };
 
 const Whiteboard = () => {
+	const location = useLocation();
+	const query = new URLSearchParams(location.search);
+	const room = query.get("room");
+
 	const canvasRef = useRef();
 	const toolType = useSelector((state) => state.whiteboard.tool);
 	const elements = useSelector((state) => state.whiteboard.elements);
@@ -102,6 +107,7 @@ const Whiteboard = () => {
 				width={window.innerWidth}
 				height={window.innerHeight}
 			/>
+			<div className="absolute b-0">{room && `Room: ${room}`}</div>
 		</>
 	);
 };

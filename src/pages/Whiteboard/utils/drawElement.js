@@ -1,4 +1,4 @@
-import { toolTypes } from "../../constants";
+import { toolTypes } from "../../../constants";
 
 export const drawElement = ({ roughCanvas, context, element }) => {
 	switch (element.type) {

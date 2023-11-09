@@ -1,4 +1,4 @@
-import { toolTypes } from "../../constants";
+import { toolTypes } from "../../../constants";
 import rough from "roughjs/bundled/rough.esm";
 
 const generator = rough.generator();

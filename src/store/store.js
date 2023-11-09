@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import whiteboardSliceReducer from "../Whiteboard/whiteboardSlice";
+import whiteboardSliceReducer from "../pages/Whiteboard/whiteboardSlice";
 
 export const store = configureStore({
 	reducer: {

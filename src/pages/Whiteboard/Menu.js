@@ -1,10 +1,10 @@
 import React from "react";
-import rectangleIcon from "../resources/icons/rectangle.svg";
-import lineIcon from "../resources/icons/line.svg";
-import pencilIcon from "../resources/icons/pencil.svg";
-import textIcon from "../resources/icons/text.svg";
-import rubberIcon from "../resources/icons/rubber.svg";
-import { toolTypes } from "../constants";
+import rectangleIcon from "../../resources/icons/rectangle.svg";
+import lineIcon from "../../resources/icons/line.svg";
+import pencilIcon from "../../resources/icons/pencil.svg";
+import textIcon from "../../resources/icons/text.svg";
+import rubberIcon from "../../resources/icons/rubber.svg";
+import { toolTypes } from "../../constants";
 import { useDispatch, useSelector } from "react-redux";
 import { setToolType } from "./whiteboardSlice";
 

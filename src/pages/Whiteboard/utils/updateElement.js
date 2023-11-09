@@ -1,6 +1,6 @@
 import { createElement } from ".";
-import { toolTypes } from "../../constants";
-import { store } from "../../store/store";
+import { toolTypes } from "../../../constants";
+import { store } from "../../../store/store";
 import { setElements } from "../whiteboardSlice";
 
 export const updateElement = (

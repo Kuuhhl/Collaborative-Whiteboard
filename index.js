@@ -1,101 +1,65 @@
 import express from "express";
 import { Server } from "socket.io";
-import http from "http";
+import { createAdapter } from "socket.io-redis";
+import { createClient } from "redis";
 import {
-	getElementByUUID,
-	getElementsInRoom,
+	checkSession,
+	removeSession,
+	addSession,
+	getRoomElements,
 	addElementToRoom,
-	deleteElementByUUID,
-	updateElementByUUID,
-	getRoomCodes,
-} from "./mongo";
-
+	removeElementFromRoom,
+} from "./databaseClient.js";
+import http from "http";
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-// contains temporary data that does
-// not have to persist across server restarts
-class TemporaryState {
-	constructor() {
-		this.joinedUsers = [];
+app.get("/joinRoom", (req, res) => {
+	// get sessionid and roomcode
+	const sessionId = req.sessionId;
+	const roomCode = req.query.roomCode;
+
+	// logout first before joining new room
+	// if user exists
+	if (!checkSession(sessionId)) {
+		removeSession(sessionId);
 	}
 
-	getRoomCode(socketId) {
-		const user = this.joinedUsers.find(
-			(user) => user.socketId === socketId
-		);
-		return user ? user.roomCode : null;
+	// check if room exists
+	if (!roomCode) {
+		res.status(400).send("Room does not exist");
+		return;
 	}
-	broadcastToRoom(roomCode, event, data) {
-		// get all socket ids in room
-		const socketIds = this.joinedUsers
-			.filter((user) => user.roomCode === roomCode)
-			.map((user) => user.socketId);
 
-		// send event to all sockets in room
-		socketIds.forEach((socketId) => {
-			io.to(socketId).emit(event, data);
-		});
-	}
-}
+	// add user to room
+	addSession({ sessionId: sessionId, roomCode: req.query.roomCode });
 
-// show list of roomcodes in json format endpoint
-app.get("/roomcodes", async (req, res) => {
-	const roomCodes = await getRoomCodes();
-	res.json(roomCodes);
+	// send all elements in room to user
+	res.status(200).send(getRoomElements(roomCode));
 });
+const io = new Server();
 
-socket.on("connection", (socket) => {
-	socket.on("joinRoom", async (roomCode) => {
-		// add user to room
-		state.joinedUsers.push({ socketId: socket.id, roomCode });
+// redis adapter to share websocket connections across multiple instances of the server
+const pubClient = createClient({ host: "localhost", port: 6379 });
+const subClient = pubClient.duplicate();
 
-		// send all elements in room to user
-		const roomElements = await getElementsInRoom(roomCode);
-		socket.emit("initialData", roomElements);
-	});
+io.adapter(createAdapter(pubClient, subClient));
 
-	socket.on("add", async (roomCode, uuid, value) => {
-		// add element to room
-		await addElementToRoom(roomCode, uuid, value);
-
-		// transmit new element to everyone in room
-		const newElement = await getElementByUUID(roomCode, uuid);
-		state.broadcastToRoom(roomCode, "addElement", newElement);
-	});
-
-	socket.on("remove", async (uuid) => {
-		// get room code of current socket
-		const roomCode = state.getRoomCode(socket.id);
-
-		// remove uuid from room
-		await deleteElementByUUID(roomCode, uuid);
-
-		// transmit deletion to everyone in room
-		if (roomCode) {
-			state.broadcastToRoom(roomCode, "removeElement", uuid);
-		}
-	});
-
-	socket.on("update", async (uuid, new_value) => {
-		// get room code of current socket
-		const roomCode = state.getRoomCode(socket.id);
-
-		// update uuid in room
-		await updateElementByUUID(roomCode, uuid, new_value);
-
-		// transmit update to everyone in room
-		if (roomCode) {
-			state.broadcastToRoom(roomCode, "updateElement", {
-				uuid,
-				new_value,
-			});
+// send updates to all users in the room
+io.on("connection", (socket) => {
+	socket.on("update", (sessionId, update) => {
+		if (checkSession(sessionId)) {
+			if (update.action === "add") {
+				addElementToRoom(sessionId, update.element);
+			} else if (update.action === "remove") {
+				removeElementFromRoom(sessionId, update.element);
+			}
+			io.to(update.room).emit("update", update);
+		} else {
+			socket.emit("error", { code: 401, message: "Invalid session ID" });
 		}
 	});
 });
-
-const state = new TemporaryState();
 
 server.listen(39291, () => {
 	console.log("server running at ws://localhost:39291/");

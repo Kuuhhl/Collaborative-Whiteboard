@@ -34,6 +34,7 @@ const Whiteboard = () => {
 	const [action, setAction] = useState(null);
 
 	const dispatch = useDispatch();
+
 	useEffect(() => {
 		const joinRoom = async () => {
 			try {
@@ -73,7 +74,7 @@ const Whiteboard = () => {
 		};
 
 		joinRoom();
-	}, []); // rerender canvas when elements change
+	}, [room]); // rerender canvas when elements change
 
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current;

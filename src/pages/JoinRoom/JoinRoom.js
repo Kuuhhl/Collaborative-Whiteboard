@@ -44,8 +44,8 @@ const JoinRoom = () => {
 	};
 
 	return (
-		<div className="flex flex-col items-center min-h-screen bg-gray-100">
-			<div className="m-auto p-8 bg-white rounded shadow-lg text-center">
+		<div className="flex flex-col items-center min-h-screen bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900">
+			<div className="m-auto p-8 bg-white bg-opacity-70 backdrop-filter backdrop-blur-md rounded shadow-lg text-center">
 				{error.visible && (
 					<ErrorOverlay
 						message={error.message}
@@ -113,7 +113,7 @@ const JoinRoom = () => {
 					href="https://github.com/theXiaoWang/Collaborative-Whiteboard/"
 					target="_blank"
 					rel="noopener noreferrer"
-					className="text-blue-500 hover:text-blue-700"
+					className="text-white hover:translate-y-1 transition-all duration-200"
 				>
 					View on GitHub
 				</a>

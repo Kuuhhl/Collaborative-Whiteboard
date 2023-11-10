@@ -25,7 +25,7 @@ function ErrorOverlay({ message, buttonText, link, visible, setVisible }) {
 		return () => {
 			window.removeEventListener("keydown", handleEnterPress);
 		};
-	}, [link]);
+	}, [link, handleButtonClick, navigate]);
 
 	if (!visible) {
 		return null;

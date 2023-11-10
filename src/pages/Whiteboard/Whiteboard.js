@@ -93,10 +93,10 @@ const Whiteboard = () => {
 	const handleMouseDown = (event) => {
 		const { clientX, clientY } = event;
 
+		let element;
+		setAction(actions.DRAWING);
 		if (toolType === toolTypes.RECTANGLE || toolType === toolTypes.LINE) {
-			setAction(actions.DRAWING);
-
-			const element = createElement({
+			element = createElement({
 				x1: clientX,
 				y1: clientY,
 				x2: clientX,
@@ -104,11 +104,17 @@ const Whiteboard = () => {
 				toolType,
 				id: uuid(),
 			});
-
-			setSelectedElement(element);
-
-			dispatch(updateElementInStore(element));
+		} else if (toolType === toolTypes.PENCIL) {
+			element = createElement({
+				points: [{ x: clientX, y: clientY }],
+				toolType,
+				id: uuid(),
+			});
 		}
+
+		setSelectedElement(element);
+
+		dispatch(updateElementInStore(element));
 	};
 
 	const handleMouseUp = () => {
@@ -126,18 +132,36 @@ const Whiteboard = () => {
 			);
 
 			if (index !== -1) {
-				updateElement(
-					{
-						index,
-						id: elements[index].id,
-						x1: elements[index].x1,
-						y1: elements[index].y1,
-						x2: clientX,
-						y2: clientY,
-						type: elements[index].type,
-					},
-					elements
-				);
+				if (
+					toolType === toolTypes.RECTANGLE ||
+					toolType === toolTypes.LINE
+				) {
+					updateElement(
+						{
+							index,
+							id: elements[index].id,
+							x1: elements[index].x1,
+							y1: elements[index].y1,
+							x2: clientX,
+							y2: clientY,
+							type: elements[index].type,
+						},
+						elements
+					);
+				} else if (toolType === toolTypes.PENCIL) {
+					updateElement(
+						{
+							index,
+							id: elements[index].id,
+							points: [
+								...elements[index].points,
+								[clientX, clientY],
+							],
+							type: elements[index].type,
+						},
+						elements
+					);
+				}
 			}
 		}
 	};
@@ -156,6 +180,8 @@ const Whiteboard = () => {
 	};
 
 	if (error.visible) {
+		// disable error for now
+		setError({ visible: false, message: error.message });
 		return (
 			<ErrorOverlay
 				message={error.message}
@@ -166,7 +192,7 @@ const Whiteboard = () => {
 						error: error.message,
 					})
 				}
-				link={"/"}
+				// link={"/"}
 				buttonText="Go Back"
 			/>
 		);

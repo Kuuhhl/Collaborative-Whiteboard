@@ -1,14 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSadTear } from "@fortawesome/free-regular-svg-icons";
+import { faSadTear } from "@fortawesome/free-solid-svg-icons";
 
 function ErrorOverlay({ message, buttonText, link, visible, setVisible }) {
 	const navigate = useNavigate();
 
-	const handleButtonClick = () => {
+	const handleButtonClick = useCallback(() => {
 		setVisible(false);
-	};
+	}, [setVisible]);
 
 	useEffect(() => {
 		const handleEnterPress = (event) => {
@@ -30,6 +30,7 @@ function ErrorOverlay({ message, buttonText, link, visible, setVisible }) {
 	if (!visible) {
 		return null;
 	}
+
 	return (
 		<div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 justify-center z-50 flex flex-col">
 			<div className="m-auto p-8 bg-white rounded shadow-lg text-center flex flex-col items-center gap-4">

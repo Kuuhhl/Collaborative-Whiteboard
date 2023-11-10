@@ -4,6 +4,7 @@ export const drawElement = ({ roughCanvas, context, element }) => {
 	switch (element.type) {
 		case toolTypes.LINE:
 		case toolTypes.RECTANGLE:
+		case toolTypes.PENCIL:
 			return roughCanvas.draw(element.roughElement);
 		default:
 			throw new Error("Something went wrong when drawing element");

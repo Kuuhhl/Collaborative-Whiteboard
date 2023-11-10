@@ -4,15 +4,16 @@ import { store } from "../../../store/store";
 import { setElements } from "../whiteboardSlice";
 
 export const updateElement = (
-	{ id, x1, x2, y1, y2, type, index },
+	{ id, x1, x2, y1, y2, type, index, points },
 	elements
 ) => {
 	const elementsCopy = [...elements];
 
+	let updatedElement;
 	switch (type) {
 		case toolTypes.LINE:
 		case toolTypes.RECTANGLE:
-			const updatedElement = createElement({
+			updatedElement = createElement({
 				id,
 				x1,
 				y1,
@@ -20,13 +21,18 @@ export const updateElement = (
 				y2,
 				toolType: type,
 			});
-
-			elementsCopy[index] = updatedElement;
-
-			store.dispatch(setElements(elementsCopy));
-
+			break;
+		case toolTypes.PENCIL:
+			updatedElement = createElement({
+				id,
+				points: points,
+				toolType: type,
+			});
 			break;
 		default:
 			throw new Error("Something went wrong when updating element");
 	}
+	elementsCopy[index] = updatedElement;
+
+	store.dispatch(setElements(elementsCopy));
 };

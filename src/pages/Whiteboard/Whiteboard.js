@@ -1,4 +1,5 @@
-import React, { useRef, useLayoutEffect, useState } from "react";
+import React, { useRef, useLayoutEffect, useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import { useSelector, useDispatch } from "react-redux";
 import Menu from "./Menu";
 import { useLocation } from "react-router-dom";
@@ -6,7 +7,11 @@ import rough from "roughjs";
 import { actions, toolTypes } from "../../constants";
 import { createElement, updateElement, drawElement } from "./utils";
 import { v4 as uuid } from "uuid";
-import { updateElement as updateElementInStore } from "./whiteboardSlice";
+import {
+	setElements,
+	updateElement as updateElementInStore,
+} from "./whiteboardSlice";
+import ErrorOverlay from "../../components/ErrorOverlay";
 
 let selectedElement;
 
@@ -15,6 +20,9 @@ const setSelectedElement = (el) => {
 };
 
 const Whiteboard = () => {
+	const [error, setError] = useState({ visible: false, message: "" });
+
+	// get room code
 	const location = useLocation();
 	const query = new URLSearchParams(location.search);
 	const room = query.get("room");
@@ -26,6 +34,46 @@ const Whiteboard = () => {
 	const [action, setAction] = useState(null);
 
 	const dispatch = useDispatch();
+	useEffect(() => {
+		const joinRoom = async () => {
+			try {
+				const response = await fetch(
+					"http://localhost:39291/joinRoom",
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ roomId: room }),
+					}
+				);
+				if (!response.ok) {
+					throw new Error(await response.text());
+				}
+				const data = await response.json();
+
+				// set sessid cookie
+				Cookies.set("SESSID", data.sessid);
+
+				// get room elements from server
+				setElements(data.elements);
+			} catch (e) {
+				if (e.name === "TypeError") {
+					setError({
+						visible: true,
+						message: "Could not join Room due to a network error.",
+					});
+				} else {
+					setError({
+						visible: true,
+						message: e.message,
+					});
+				}
+			}
+		};
+
+		joinRoom();
+	}, []); // rerender canvas when elements change
 
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current;
@@ -40,9 +88,9 @@ const Whiteboard = () => {
 		});
 	}, [elements]);
 
+	// Mouse / Touchscreen handlers
 	const handleMouseDown = (event) => {
 		const { clientX, clientY } = event;
-		console.log(toolType);
 
 		if (toolType === toolTypes.RECTANGLE || toolType === toolTypes.LINE) {
 			setAction(actions.DRAWING);
@@ -105,6 +153,23 @@ const Whiteboard = () => {
 		const { clientX, clientY } = event.touches[0];
 		handleMouseMove({ clientX, clientY });
 	};
+
+	if (error.visible) {
+		return (
+			<ErrorOverlay
+				message={error.message}
+				visible={error.visible}
+				setVisible={() =>
+					setError({
+						visible: true,
+						error: error.message,
+					})
+				}
+				link={"/"}
+				buttonText="Go Back"
+			/>
+		);
+	}
 
 	return (
 		<div className="relative">

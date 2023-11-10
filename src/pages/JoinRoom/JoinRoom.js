@@ -1,20 +1,63 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import ErrorOverlay from "../../components/ErrorOverlay";
+import { useNavigate } from "react-router-dom";
 
 const JoinRoom = () => {
 	const [roomCode, setRoomCode] = useState("");
+	const [error, setError] = useState({ visible: false, message: "" });
 	const navigate = useNavigate();
 
-	const handleSubmit = (e) => {
+	const handleSubmitJoin = (e) => {
 		e.preventDefault();
 		if (roomCode) {
+			// go to the new room
 			navigate(`/?room=${roomCode}`);
+		}
+	};
+	const handleSubmitCreate = async (event) => {
+		event.preventDefault();
+
+		try {
+			const response = await fetch("http://localhost:39291/createRoom", {
+				method: "POST",
+			});
+			if (!response.ok) {
+				throw new Error(await response.text());
+			}
+			const data = await response.json();
+
+			// go to the newly created room
+			navigate(`/?room=${data.roomCode}`);
+		} catch (e) {
+			if (e.name === "TypeError") {
+				setError({
+					visible: true,
+					message: "Could not create Room due to a network error.",
+				});
+			} else {
+				setError({
+					visible: true,
+					message: e.message,
+				});
+			}
 		}
 	};
 
 	return (
 		<div className="flex flex-col items-center min-h-screen bg-gray-100">
 			<div className="m-auto p-8 bg-white rounded shadow-lg text-center">
+				{error.visible && (
+					<ErrorOverlay
+						message={error.message}
+						visible={error.visible}
+						setVisible={() =>
+							setError({
+								visible: false,
+								error: error.message,
+							})
+						}
+					/>
+				)}
 				{/* Logo and Header */}
 				<div className="mb-8">
 					<img
@@ -26,33 +69,42 @@ const JoinRoom = () => {
 				</div>
 
 				{/* Inputs */}
-				<form
-					onSubmit={handleSubmit}
-					className="flex flex-col gap-4 items-center"
-				>
-					<input
-						type="text"
-						placeholder="Enter a room code"
-						value={roomCode}
-						onChange={(e) => setRoomCode(e.target.value)}
-						className="w-64 p-2 border"
-					/>
-					<button
-						type="submit"
-						className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ${
-							!roomCode && "opacity-50 cursor-not-allowed"
-						}`}
-						disabled={!roomCode}
+				<div className="flex flex-col gap-4">
+					<form
+						onSubmit={handleSubmitJoin}
+						className="flex flex-col gap-4 items-center"
 					>
-						Join Room
-					</button>
-					<Link
-						to="/createRoom"
-						className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+						<input
+							type="text"
+							autoFocus
+							placeholder="Enter a room code"
+							value={roomCode}
+							onChange={(e) => setRoomCode(e.target.value)}
+							className="w-64 p-2 border"
+						/>
+
+						<button
+							type="submit"
+							className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ${
+								!roomCode && "opacity-50 cursor-not-allowed"
+							}`}
+							disabled={!roomCode}
+						>
+							Join Room
+						</button>
+					</form>
+					<form
+						onSubmit={handleSubmitCreate}
+						className="flex flex-col gap-4 items-center"
 					>
-						Create Room
-					</Link>
-				</form>
+						<button
+							className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+							onClick={handleSubmitCreate}
+						>
+							Create new Room
+						</button>
+					</form>
+				</div>
 			</div>
 
 			{/* Footer */}

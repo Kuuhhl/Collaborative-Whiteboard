@@ -1,14 +1,17 @@
 import React from "react";
-import rectangleIcon from "../../resources/icons/rectangle.svg";
-import lineIcon from "../../resources/icons/line.svg";
-import pencilIcon from "../../resources/icons/pencil.svg";
-import textIcon from "../../resources/icons/text.svg";
-import rubberIcon from "../../resources/icons/rubber.svg";
 import { toolTypes } from "../../constants";
 import { useDispatch, useSelector } from "react-redux";
 import { setToolType } from "./whiteboardSlice";
+import { faSquare } from "@fortawesome/free-regular-svg-icons";
+import {
+	faEraser,
+	faPencil,
+	faFont,
+	faMinus,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-const IconButton = ({ src, type }) => {
+const IconButton = ({ icon, type }) => {
 	const dispatch = useDispatch();
 
 	const selectedToolType = useSelector((state) => state.whiteboard.tool);
@@ -27,7 +30,7 @@ const IconButton = ({ src, type }) => {
 					: "bg-green-200 hover:bg-green-300")
 			}
 		>
-			<img alt={type + " tool icon"} src={src} />
+			<FontAwesomeIcon icon={icon} />
 		</button>
 	);
 };
@@ -35,11 +38,11 @@ const IconButton = ({ src, type }) => {
 const Menu = () => {
 	return (
 		<div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-96 bg-gray-200 rounded-b-lg h-16 flex justify-around items-center">
-			<IconButton src={rectangleIcon} type={toolTypes.RECTANGLE} />
-			<IconButton src={lineIcon} type={toolTypes.LINE} />
-			<IconButton src={pencilIcon} type={toolTypes.PENCIL} />
-			<IconButton src={textIcon} type={toolTypes.TEXT} />
-			<IconButton src={rubberIcon} type={toolTypes.RUBBER} />
+			<IconButton icon={faSquare} type={toolTypes.RECTANGLE} />
+			<IconButton icon={faMinus} type={toolTypes.LINE} />
+			<IconButton icon={faPencil} type={toolTypes.PENCIL} />
+			<IconButton icon={faFont} type={toolTypes.TEXT} />
+			<IconButton icon={faEraser} type={toolTypes.RUBBER} />
 		</div>
 	);
 };

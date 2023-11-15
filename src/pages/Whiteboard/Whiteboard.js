@@ -89,6 +89,38 @@ const Whiteboard = () => {
 		});
 	}, [elements]);
 
+	useEffect(() => {
+		const handleKeyDown = (event) => {
+			if (
+				action === actions.TYPING &&
+				selectedElement &&
+				selectedElement.type === toolTypes.TEXT
+			) {
+				let updatedText;
+				if (event.key === "Enter") {
+					setAction(null);
+				} else if (event.key === "Backspace") {
+					updatedText = selectedElement.text.slice(0, -1);
+				} else {
+					updatedText = (selectedElement.text || "") + event.key;
+				}
+
+				const updatedElement = {
+					...selectedElement,
+					text: updatedText,
+				};
+				setSelectedElement(updatedElement);
+				dispatch(updateElementInStore(updatedElement));
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [action, dispatch]);
+
 	// Mouse / Touchscreen handlers
 	const handleMouseDown = (event) => {
 		const { clientX, clientY } = event;
@@ -98,8 +130,7 @@ const Whiteboard = () => {
 		if (
 			toolType === toolTypes.RECTANGLE ||
 			toolType === toolTypes.LINE ||
-			toolType === toolTypes.PENCIL ||
-			toolType === toolTypes.TEXT
+			toolType === toolTypes.PENCIL
 		) {
 			setAction(actions.DRAWING);
 
@@ -113,14 +144,27 @@ const Whiteboard = () => {
 			});
 
 			setSelectedElement(element);
+			dispatch(updateElementInStore(element));
+		} else if (toolType === toolTypes.TEXT) {
+			setAction(actions.TYPING);
 
+			element = createElement({
+				x1: clientX,
+				y1: clientY,
+				toolType,
+				id: uuid(),
+			});
+
+			setSelectedElement(element);
 			dispatch(updateElementInStore(element));
 		}
 	};
 
 	const handleMouseUp = () => {
-		setAction(null);
-		setSelectedElement(null);
+		if (action === actions.DRAWING) {
+			setAction(null);
+			setSelectedElement(null);
+		}
 	};
 
 	const handleMouseMove = (event) => {

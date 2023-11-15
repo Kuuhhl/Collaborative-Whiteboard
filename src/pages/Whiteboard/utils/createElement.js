@@ -49,7 +49,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, points }) => {
 				type: toolType,
 				x1,
 				y1,
-				text: "Text",
+				text: "Your text here",
 			};
 		default:
 			throw new Error("Something went wrong when creating element");

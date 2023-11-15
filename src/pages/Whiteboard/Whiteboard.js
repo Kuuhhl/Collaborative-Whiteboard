@@ -98,7 +98,8 @@ const Whiteboard = () => {
 		if (
 			toolType === toolTypes.RECTANGLE ||
 			toolType === toolTypes.LINE ||
-			toolType === toolTypes.PENCIL
+			toolType === toolTypes.PENCIL ||
+			toolType === toolTypes.TEXT
 		) {
 			setAction(actions.DRAWING);
 

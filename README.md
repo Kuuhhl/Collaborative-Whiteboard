@@ -16,6 +16,13 @@
 
 A live demo is available at [whiteboard.kuuhhl.live](https://whiteboard.kuuhhl.live/).
 
+## Screenshots
+
+<div style="display: flex; justify-content:center; align-items:center;" align="center">
+  <img src="screenshot-1.png" alt="Screenshot 1" width="200" style="margin-right: 20px;">
+  <img src="screenshot-2.png" alt="Screenshot 2" width="300" style="margin-left: 20px;">
+</div>
+
 ## Features
 
 * Real-time collaborative sketching

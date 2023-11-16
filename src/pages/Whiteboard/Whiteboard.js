@@ -21,6 +21,7 @@ const setSelectedElement = (el) => {
 
 const Whiteboard = () => {
 	const [error, setError] = useState({ visible: false, message: "" });
+	const [cursor, setCursor] = useState(null);
 
 	// get room code
 	const location = useLocation();
@@ -76,6 +77,56 @@ const Whiteboard = () => {
 		joinRoom();
 	}, [room]); // rerender canvas when elements change
 
+	useEffect(() => {
+		// check if div element for custom cursor already exists
+		if (document.getElementById("custom-cursor")) return;
+
+		// Create a div element for the custom cursor
+		const cursor = document.createElement("div");
+		cursor.id = "custom-cursor";
+		cursor.style.position = "absolute";
+		cursor.style.borderRadius = "50%"; // Make the cursor round
+		cursor.style.pointerEvents = "none"; // Make sure the cursor doesn't interfere with mouse events
+		cursor.style.transform = "translate(-50%, -50%)";
+		document.body.appendChild(cursor);
+
+		// Save the cursor div in the state so it can be accessed in other functions
+		setCursor(cursor);
+	}, []);
+
+	useEffect(() => {
+		const canvas = canvasRef.current;
+
+		if (!cursor || !canvas) return;
+
+		if (!toolType) {
+			cursor.style.display = "none";
+			canvas.style.cursor = "default"; // Show the default cursor
+		} else if (toolType === toolTypes.PENCIL) {
+			cursor.style.display = "block";
+			cursor.style.width = "5px";
+			cursor.style.height = "5px";
+			cursor.style.border = "1px solid black";
+			canvas.style.cursor = "none"; // Hide the default cursor
+		} else if (toolType === toolTypes.ERASER) {
+			cursor.style.display = "block";
+			cursor.style.width = "40px";
+			cursor.style.height = "40px";
+			cursor.style.backgroundColor = "white";
+			cursor.style.border = "1px solid black";
+			canvas.style.cursor = "none"; // Hide the default cursor
+		} else if (toolType === toolTypes.TEXT) {
+			cursor.style.display = "none";
+			canvas.style.cursor = "text"; // Show the text cursor
+		} else if (
+			toolType === toolTypes.LINE ||
+			toolType === toolTypes.RECTANGLE
+		) {
+			cursor.style.display = "none";
+			canvas.style.cursor = "crosshair"; // Show the crosshair cursor
+		}
+	}, [toolType, cursor]);
+
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current;
 		const ctx = canvas.getContext("2d");
@@ -98,7 +149,8 @@ const Whiteboard = () => {
 		if (
 			toolType === toolTypes.RECTANGLE ||
 			toolType === toolTypes.LINE ||
-			toolType === toolTypes.PENCIL
+			toolType === toolTypes.PENCIL ||
+			toolType === toolTypes.ERASER
 		) {
 			setAction(actions.DRAWING);
 
@@ -171,6 +223,10 @@ const Whiteboard = () => {
 	const handleMouseMove = (event) => {
 		const { clientX, clientY } = event;
 
+		// Update the position of the custom cursor
+		cursor.style.left = `${clientX}px`;
+		cursor.style.top = `${clientY}px`;
+
 		if (action === actions.DRAWING) {
 			// find index of selected element
 			const index = elements.findIndex(
@@ -229,12 +285,12 @@ const Whiteboard = () => {
 
 	return (
 		<div className="relative">
-			<Menu />
+			<Menu setAction={setAction} />
 			<div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-4">
 				{room && `Room: ${room}`}
 			</div>
 			<canvas
-				className="touch-none"
+				className="touch-none cursor-none"
 				onMouseDown={handleMouseDown}
 				onMouseUp={handleMouseUp}
 				onMouseMove={handleMouseMove}

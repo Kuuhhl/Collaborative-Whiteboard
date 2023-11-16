@@ -27,6 +27,23 @@ const drawPencilELement = (context, element) => {
 
 	context.fill(path);
 };
+const drawEraserElement = (context, element) => {
+	const eraserSize = 20;
+
+	element.points.forEach((point) => {
+		context.save();
+		context.beginPath();
+		context.arc(point.x, point.y, eraserSize, 0, Math.PI * 2, true);
+		context.clip();
+		context.clearRect(
+			point.x - eraserSize,
+			point.y - eraserSize,
+			eraserSize * 2,
+			eraserSize * 2
+		);
+		context.restore();
+	});
+};
 
 export const drawElement = ({ roughCanvas, context, element }) => {
 	switch (element.type) {
@@ -38,6 +55,9 @@ export const drawElement = ({ roughCanvas, context, element }) => {
 			break;
 		case toolTypes.TEXT:
 			drawTextElement(context, element);
+			break;
+		case toolTypes.ERASER:
+			drawEraserElement(context, element);
 			break;
 		default:
 			throw new Error("Something went wrong when drawing element");

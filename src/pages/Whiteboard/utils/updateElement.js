@@ -40,6 +40,20 @@ export const updateElement = (
 
 			store.dispatch(setElements(elementsCopy));
 			break;
+		case toolTypes.ERASER:
+			elementsCopy[index] = {
+				...elementsCopy[index],
+				points: [
+					...elementsCopy[index].points,
+					{
+						x: x2,
+						y: y2,
+					},
+				],
+			};
+
+			store.dispatch(setElements(elementsCopy));
+			break;
 		case toolTypes.TEXT:
 			break;
 		default:

@@ -3,5 +3,5 @@ export const toolTypes = {
 	LINE: "LINE",
 	PENCIL: "PENCIL",
 	TEXT: "TEXT",
-	RUBBER: "RUBBER",
+	ERASER: "ERASER",
 };

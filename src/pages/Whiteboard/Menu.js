@@ -35,14 +35,20 @@ const IconButton = ({ icon, type }) => {
 	);
 };
 
-const Menu = () => {
+const Menu = ({ setAction }) => {
+	const handleMouseUp = () => {
+		setAction(null);
+	};
 	return (
-		<div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-96 bg-gray-200 rounded-b-lg h-16 flex justify-around items-center">
+		<div
+			className="absolute top-0 left-1/2 transform -translate-x-1/2 w-96 bg-gray-200 rounded-b-lg h-16 flex justify-around items-center"
+			onMouseUp={handleMouseUp}
+		>
 			<IconButton icon={faSquare} type={toolTypes.RECTANGLE} />
 			<IconButton icon={faMinus} type={toolTypes.LINE} />
 			<IconButton icon={faPencil} type={toolTypes.PENCIL} />
 			<IconButton icon={faFont} type={toolTypes.TEXT} />
-			<IconButton icon={faEraser} type={toolTypes.RUBBER} />
+			<IconButton icon={faEraser} type={toolTypes.ERASER} />
 		</div>
 	);
 };

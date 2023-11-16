@@ -4,7 +4,7 @@ import { store } from "../../../store/store";
 import { setElements } from "../whiteboardSlice";
 
 export const updateElement = (
-	{ id, x1, x2, y1, y2, type, index, points },
+	{ id, x1, x2, y1, y2, type, index },
 	elements
 ) => {
 	const elementsCopy = [...elements];

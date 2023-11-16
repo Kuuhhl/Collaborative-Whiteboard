@@ -8,6 +8,7 @@ import { actions, toolTypes } from "../../constants";
 import { createElement, updateElement, drawElement } from "./utils";
 import { v4 as uuid } from "uuid";
 import {
+	setOfflineMode,
 	setElements,
 	updateElement as updateElementInStore,
 } from "./whiteboardSlice";
@@ -38,6 +39,19 @@ const Whiteboard = () => {
 
 	useEffect(() => {
 		const joinRoom = async () => {
+			// offline
+			if (room.trim() === "offline") {
+				dispatch(setOfflineMode(true));
+
+				// get elements from local storage
+				const elements = JSON.parse(localStorage.getItem("elements"));
+				if (elements) {
+					dispatch(setElements(elements));
+				}
+				return;
+			}
+
+			// online
 			try {
 				const response = await fetch(
 					"http://localhost:39291/joinRoom",
@@ -58,7 +72,7 @@ const Whiteboard = () => {
 				Cookies.set("SESSID", data.sessid);
 
 				// get room elements from server
-				setElements(data.elements);
+				dispatch(setElements(data.elements));
 			} catch (e) {
 				if (e.name === "TypeError") {
 					setError({
@@ -75,7 +89,7 @@ const Whiteboard = () => {
 		};
 
 		joinRoom();
-	}, [room]); // rerender canvas when elements change
+	}, [room, dispatch]); // rerender canvas when elements change
 
 	useEffect(() => {
 		// check if div element for custom cursor already exists
@@ -181,7 +195,9 @@ const Whiteboard = () => {
 					text: input.value,
 				});
 				setSelectedElement(element);
+
 				dispatch(updateElementInStore(element));
+				dispatch(setElements([...elements, element]));
 				document.body.removeChild(input);
 				document.removeEventListener("mousedown", handleOutsideClick);
 			};
@@ -224,8 +240,10 @@ const Whiteboard = () => {
 		const { clientX, clientY } = event;
 
 		// Update the position of the custom cursor
-		cursor.style.left = `${clientX}px`;
-		cursor.style.top = `${clientY}px`;
+		if (cursor) {
+			cursor.style.left = `${clientX}px`;
+			cursor.style.top = `${clientY}px`;
+		}
 
 		if (action === actions.DRAWING) {
 			// find index of selected element
@@ -287,8 +305,33 @@ const Whiteboard = () => {
 		<div className="relative">
 			<Menu setAction={setAction} />
 			<div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-4">
-				{room && `Room: ${room}`}
+				{room === "offline" ? (
+					<div className="flex flex-col items-center">
+						<span
+							className="italic mb-2"
+							title="You are in offline mode because the backend server didn't give a response."
+						>
+							Offline Mode
+						</span>
+						{elements.length > 0 ? (
+							<button
+								onClick={() => {
+									localStorage.removeItem("elements");
+									dispatch(setElements([]));
+								}}
+								className="underline text-blue-500 px-1 py-0.5"
+							>
+								Clear Local Canvas
+							</button>
+						) : (
+							""
+						)}
+					</div>
+				) : (
+					`Room: ${room}`
+				)}
 			</div>
+
 			<canvas
 				className="touch-none cursor-none"
 				onMouseDown={handleMouseDown}

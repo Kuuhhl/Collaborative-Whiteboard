@@ -1,11 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ErrorOverlay from "../../components/ErrorOverlay";
 import { useNavigate } from "react-router-dom";
 
 const JoinRoom = () => {
+	const baseUrl = "https://localhost:39291";
 	const [roomCode, setRoomCode] = useState("");
 	const [error, setError] = useState({ visible: false, message: "" });
 	const navigate = useNavigate();
+
+	useEffect(() => {
+		fetch(`${baseUrl}/ping`)
+			.then((response) => {
+				if (!response.ok) {
+					throw new Error("Server is down");
+				}
+				return response.json();
+			})
+			.catch((error) => {
+				navigate(`/?room=offline`);
+			});
+	}, [baseUrl, navigate]);
 
 	const handleSubmitJoin = (e) => {
 		e.preventDefault();
@@ -18,7 +32,7 @@ const JoinRoom = () => {
 		event.preventDefault();
 
 		try {
-			const response = await fetch("http://localhost:39291/createRoom", {
+			const response = await fetch(`${baseUrl}/createRoom`, {
 				method: "POST",
 			});
 			if (!response.ok) {

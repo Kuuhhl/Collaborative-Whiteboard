@@ -1,4 +1,6 @@
 import React, { useRef, useLayoutEffect, useState, useEffect } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSave } from "@fortawesome/free-solid-svg-icons";
 import Cookies from "js-cookie";
 import { useSelector, useDispatch } from "react-redux";
 import Menu from "./Menu";
@@ -331,9 +333,37 @@ const Whiteboard = () => {
 					`Room: ${room}`
 				)}
 			</div>
+			{elements.length > 0 && (
+				<button
+					onClick={() => {
+						const canvas =
+							document.getElementById("whiteboard-canvas");
+						const tempCanvas = document.createElement("canvas");
+						tempCanvas.width = canvas.width;
+						tempCanvas.height = canvas.height;
+						const ctx = tempCanvas.getContext("2d");
 
+						// Draw a white background
+						ctx.fillStyle = "white";
+						ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+						// Draw the original canvas on top
+						ctx.drawImage(canvas, 0, 0);
+
+						const imgData = tempCanvas.toDataURL("image/png");
+						const link = document.createElement("a");
+						link.href = imgData;
+						link.download = "whiteboard.png";
+						link.click();
+					}}
+					className="absolute bottom-0 right-0 m-4  bg-purple-800 px-4 py-2 text-white rounded"
+				>
+					<FontAwesomeIcon icon={faSave} />
+				</button>
+			)}
 			<canvas
 				className="touch-none cursor-none"
+				id={"whiteboard-canvas"}
 				onMouseDown={handleMouseDown}
 				onMouseUp={handleMouseUp}
 				onMouseMove={handleMouseMove}

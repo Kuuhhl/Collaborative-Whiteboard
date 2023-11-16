@@ -19,9 +19,11 @@ A live demo is available at [whiteboard.kuuhhl.live](https://whiteboard.kuuhhl.l
 ## Features
 
 * Real-time collaborative sketching
+* Offline-Mode for local sketching
 * User-friendly interface
 * Save and export sketches
 * Responsive design for various devices
+* Pencil, Eraser, Rectangle, Text and Line Tools
 
 ## Run locally
 

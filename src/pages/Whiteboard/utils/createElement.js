@@ -11,7 +11,16 @@ const generateLine = ({ x1, y1, x2, y2 }) => {
 	return generator.line(x1, y1, x2, y2);
 };
 
-export const createElement = ({ x1, y1, x2, y2, toolType, id, points }) => {
+export const createElement = ({
+	x1,
+	y1,
+	x2,
+	y2,
+	toolType,
+	id,
+	points,
+	text,
+}) => {
 	let roughElement;
 
 	switch (toolType) {
@@ -49,7 +58,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, points }) => {
 				type: toolType,
 				x1,
 				y1,
-				text: "Your text here",
+				text: text,
 			};
 		default:
 			throw new Error("Something went wrong when creating element");

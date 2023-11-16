@@ -89,38 +89,6 @@ const Whiteboard = () => {
 		});
 	}, [elements]);
 
-	useEffect(() => {
-		const handleKeyDown = (event) => {
-			if (
-				action === actions.TYPING &&
-				selectedElement &&
-				selectedElement.type === toolTypes.TEXT
-			) {
-				let updatedText;
-				if (event.key === "Enter") {
-					setAction(null);
-				} else if (event.key === "Backspace") {
-					updatedText = selectedElement.text.slice(0, -1);
-				} else {
-					updatedText = (selectedElement.text || "") + event.key;
-				}
-
-				const updatedElement = {
-					...selectedElement,
-					text: updatedText,
-				};
-				setSelectedElement(updatedElement);
-				dispatch(updateElementInStore(updatedElement));
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-
-		return () => {
-			window.removeEventListener("keydown", handleKeyDown);
-		};
-	}, [action, dispatch]);
-
 	// Mouse / Touchscreen handlers
 	const handleMouseDown = (event) => {
 		const { clientX, clientY } = event;
@@ -146,17 +114,50 @@ const Whiteboard = () => {
 			setSelectedElement(element);
 			dispatch(updateElementInStore(element));
 		} else if (toolType === toolTypes.TEXT) {
-			setAction(actions.TYPING);
+			const input = document.createElement("input");
+			input.style.position = "absolute";
+			input.style.left = `${clientX}px`;
+			input.style.top = `${clientY}px`;
+			input.style.opacity = 1;
 
-			element = createElement({
-				x1: clientX,
-				y1: clientY,
-				toolType,
-				id: uuid(),
-			});
+			const submitInput = () => {
+				element = createElement({
+					x1: clientX,
+					y1: clientY,
+					toolType,
+					id: uuid(),
+					text: input.value,
+				});
+				setSelectedElement(element);
+				dispatch(updateElementInStore(element));
+				document.body.removeChild(input);
+				document.removeEventListener("mousedown", handleOutsideClick);
+			};
 
-			setSelectedElement(element);
-			dispatch(updateElementInStore(element));
+			const cancelInput = () => {
+				document.body.removeChild(input);
+				document.removeEventListener("mousedown", handleOutsideClick);
+			};
+
+			input.onkeydown = (event) => {
+				if (event.key === "Enter") {
+					submitInput();
+				} else if (event.key === "Escape") {
+					cancelInput();
+				}
+			};
+
+			const handleOutsideClick = (event) => {
+				if (event.target !== input && input.text) {
+					submitInput();
+				}
+			};
+			document.addEventListener("mousedown", handleOutsideClick);
+
+			input.onblur = submitInput;
+			document.body.appendChild(input);
+
+			setTimeout(() => input.focus(), 0);
 		}
 	};
 

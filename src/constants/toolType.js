@@ -1,7 +1,8 @@
 export const toolTypes = {
-	RECTANGLE: "RECTANGLE",
-	LINE: "LINE",
-	PENCIL: "PENCIL",
-	TEXT: "TEXT",
-	ERASER: "ERASER",
+  RECTANGLE: "RECTANGLE",
+  CIRCLE: "CIRCLE",
+  LINE: "LINE",
+  PENCIL: "PENCIL",
+  TEXT: "TEXT",
+  ERASER: "ERASER",
 };

@@ -36,7 +36,7 @@ const whiteboardSlice = createSlice({
 			} else {
 				updateOrAddElement(payload);
 
-				if (myOwnChange) {
+				if (myOwnChange && !state.offline_mode) {
 					sendUpdateMessage(payload);
 				}
 			}

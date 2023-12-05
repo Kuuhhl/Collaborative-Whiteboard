@@ -60,8 +60,7 @@ const Whiteboard = () => {
 			// online
 			try {
 				const response = await fetch(
-					(process.env.BACKEND_BASE_URL || "http://localhost:39291") +
-						"/joinRoom",
+					process.env.BACKEND_BASE_URL + "/joinRoom",
 					{
 						method: "POST",
 						headers: {

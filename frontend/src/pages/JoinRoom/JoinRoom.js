@@ -9,9 +9,7 @@ const JoinRoom = () => {
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		fetch(
-			(process.env.BACKEND_BASE_URL || "http://localhost:39291") + "/ping"
-		)
+		fetch(process.env.BACKEND_BASE_URL + "/ping")
 			.then((response) => {
 				if (!response.ok) {
 					throw new Error("Server is down");
@@ -44,8 +42,7 @@ const JoinRoom = () => {
 
 		try {
 			const response = await fetch(
-				(process.env.BACKEND_BASE_URL || "http://localhost:39291") +
-					"/createRoom",
+				process.env.BACKEND_BASE_URL + "/createRoom",
 				{
 					method: "POST",
 				}

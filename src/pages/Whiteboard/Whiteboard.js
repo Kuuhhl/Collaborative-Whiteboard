@@ -1,7 +1,7 @@
 import React, { useRef, useLayoutEffect, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
-import Cookies from "js-cookie";
 import { useSelector, useDispatch } from "react-redux";
 import Menu from "./Menu";
 import { useLocation } from "react-router-dom";
@@ -10,367 +10,393 @@ import { actions, toolTypes } from "../../constants";
 import { createElement, updateElement, drawElement } from "./utils";
 import { v4 as uuid } from "uuid";
 import {
-  setOfflineMode,
-  setElements,
-  updateElement as updateElementInStore,
+	setOfflineMode,
+	updateOrSetElements,
+	clearElements,
 } from "./whiteboardSlice";
+import { connectToServer, listenToUpdateMessage } from "./utils/socket";
 import ErrorOverlay from "../../components/ErrorOverlay";
 
 let selectedElement;
 
 const setSelectedElement = (el) => {
-  selectedElement = el;
+	selectedElement = el;
 };
 
 const Whiteboard = () => {
-  const [error, setError] = useState({ visible: false, message: "" });
-  const [cursor, setCursor] = useState(null);
+	const navigate = useNavigate();
+	const [error, setError] = useState({ visible: false, message: "" });
+	const [cursor, setCursor] = useState(null);
 
-  // get room code
-  const location = useLocation();
-  const query = new URLSearchParams(location.search);
-  const room = query.get("room");
+	// get room code
+	const location = useLocation();
+	const query = new URLSearchParams(location.search);
+	const room = query.get("room");
 
-  const canvasRef = useRef();
-  const toolType = useSelector((state) => state.whiteboard.tool);
-  const elements = useSelector((state) => state.whiteboard.elements);
+	const canvasRef = useRef();
+	const toolType = useSelector((state) => state.whiteboard.tool);
+	const elements = useSelector((state) => state.whiteboard.elements);
 
-  const [action, setAction] = useState(null);
+	const [action, setAction] = useState(null);
 
-  const dispatch = useDispatch();
+	const dispatch = useDispatch();
 
-  useEffect(() => {
-    const joinRoom = async () => {
-      // offline
-      if (room.trim() === "offline") {
-        dispatch(setOfflineMode(true));
+	useEffect(() => {
+		const joinRoom = async () => {
+			// offline
+			if (room.trim() === "offline") {
+				dispatch(setOfflineMode(true));
 
-        // get elements from local storage
-        const elements = JSON.parse(localStorage.getItem("elements"));
-        if (elements) {
-          dispatch(setElements(elements));
-        }
-        return;
-      }
+				// get elements from local storage
+				const elements = JSON.parse(localStorage.getItem("elements"));
+				if (elements && elements !== "") {
+					dispatch(
+						updateOrSetElements({ elements, myOwnChange: false })
+					);
+				}
+				return;
+			}
 
-      // online
-      try {
-        const response = await fetch("http://localhost:39291/joinRoom", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ roomId: room }),
-        });
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-        const data = await response.json();
+			// online
+			try {
+				const response = await fetch(
+					(process.env.BACKEND_BASE_URL || "http://localhost:39291") +
+						"/joinRoom",
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ roomCode: room }),
+						credentials: "include",
+					}
+				);
+				if (!response.ok) {
+					// redirect to home page, with
+					// error message in query params
+					const data = await response.json();
+					navigate(`/?error=${data.message}`);
+				}
+				const data = await response.json();
 
-        // set sessid cookie
-        Cookies.set("SESSID", data.sessid);
+				// get room elements from server
+				dispatch(
+					updateOrSetElements({
+						payload: data.elements,
+						myOwnChange: false,
+					})
+				);
 
-        // get room elements from server
-        dispatch(setElements(data.elements));
-      } catch (e) {
-        if (e.name === "TypeError") {
-          setError({
-            visible: true,
-            message: "Could not join Room due to a network error.",
-          });
-        } else {
-          setError({
-            visible: true,
-            message: e.message,
-          });
-        }
-      }
-    };
+				// Connect to socketio
+				connectToServer();
 
-    joinRoom();
-  }, [room, dispatch]); // rerender canvas when elements change
+				// add socketio listener
+				listenToUpdateMessage();
+			} catch (e) {
+				if (e.name === "TypeError") {
+					setError({
+						visible: true,
+						message: "Could not join Room due to a network error.",
+					});
+				} else {
+					setError({
+						visible: true,
+						message: e.message,
+					});
+				}
+			}
+		};
 
-  useEffect(() => {
-    // check if div element for custom cursor already exists
-    if (document.getElementById("custom-cursor")) return;
+		joinRoom();
+	}, [room, dispatch, navigate]); // rerender canvas when elements change
 
-    // Create a div element for the custom cursor
-    const cursor = document.createElement("div");
-    cursor.id = "custom-cursor";
-    cursor.style.position = "absolute";
-    cursor.style.borderRadius = "50%"; // Make the cursor round
-    cursor.style.pointerEvents = "none"; // Make sure the cursor doesn't interfere with mouse events
-    cursor.style.transform = "translate(-50%, -50%)";
-    document.body.appendChild(cursor);
+	useEffect(() => {
+		// check if div element for custom cursor already exists
+		if (document.getElementById("custom-cursor")) return;
 
-    // Save the cursor div in the state so it can be accessed in other functions
-    setCursor(cursor);
-  }, []);
+		// Create a div element for the custom cursor
+		const cursor = document.createElement("div");
+		cursor.id = "custom-cursor";
+		cursor.style.position = "absolute";
+		cursor.style.borderRadius = "50%"; // Make the cursor round
+		cursor.style.pointerEvents = "none"; // Make sure the cursor doesn't interfere with mouse events
+		cursor.style.transform = "translate(-50%, -50%)";
+		document.body.appendChild(cursor);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
+		// Save the cursor div in the state so it can be accessed in other functions
+		setCursor(cursor);
+	}, []);
 
-    if (!cursor || !canvas) return;
+	useEffect(() => {
+		const canvas = canvasRef.current;
 
-    if (!toolType) {
-      cursor.style.display = "none";
-      canvas.style.cursor = "default"; // Show the default cursor
-    } else if (toolType === toolTypes.PENCIL) {
-      cursor.style.display = "block";
-      cursor.style.width = "5px";
-      cursor.style.height = "5px";
-      cursor.style.border = "1px solid black";
-      canvas.style.cursor = "none"; // Hide the default cursor
-    } else if (toolType === toolTypes.ERASER) {
-      cursor.style.display = "block";
-      cursor.style.width = "40px";
-      cursor.style.height = "40px";
-      cursor.style.backgroundColor = "white";
-      cursor.style.border = "1px solid black";
-      canvas.style.cursor = "none"; // Hide the default cursor
-    } else if (toolType === toolTypes.TEXT) {
-      cursor.style.display = "none";
-      canvas.style.cursor = "text"; // Show the text cursor
-    } else if (
-      toolType === toolTypes.LINE ||
-      toolType === toolTypes.CIRCLE ||
-      toolType === toolTypes.RECTANGLE
-    ) {
-      cursor.style.display = "none";
-      canvas.style.cursor = "crosshair"; // Show the crosshair cursor
-    }
-  }, [toolType, cursor]);
+		if (!cursor || !canvas) return;
 
-  useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+		if (!toolType) {
+			cursor.style.display = "none";
+			canvas.style.cursor = "default"; // Show the default cursor
+		} else if (toolType === toolTypes.PENCIL) {
+			cursor.style.display = "block";
+			cursor.style.width = "5px";
+			cursor.style.height = "5px";
+			cursor.style.border = "1px solid black";
+			canvas.style.cursor = "none"; // Hide the default cursor
+		} else if (toolType === toolTypes.ERASER) {
+			cursor.style.display = "block";
+			cursor.style.width = "40px";
+			cursor.style.height = "40px";
+			cursor.style.backgroundColor = "white";
+			cursor.style.border = "1px solid black";
+			canvas.style.cursor = "none"; // Hide the default cursor
+		} else if (toolType === toolTypes.TEXT) {
+			cursor.style.display = "none";
+			canvas.style.cursor = "text"; // Show the text cursor
+		} else if (
+			toolType === toolTypes.LINE ||
+			toolType === toolTypes.CIRCLE ||
+			toolType === toolTypes.RECTANGLE
+		) {
+			cursor.style.display = "none";
+			canvas.style.cursor = "crosshair"; // Show the crosshair cursor
+		}
+	}, [toolType, cursor]);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+	useLayoutEffect(() => {
+		const canvas = canvasRef.current;
+		const ctx = canvas.getContext("2d");
 
-    const roughCanvas = rough.canvas(canvas);
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    elements.forEach((element) => {
-      drawElement({ roughCanvas, context: ctx, element });
-    });
-  }, [elements]);
+		const roughCanvas = rough.canvas(canvas);
 
-  // Mouse / Touchscreen handlers
-  const handleMouseDown = (event) => {
-    const { clientX, clientY } = event;
+		elements.forEach((element) => {
+			drawElement({ roughCanvas, context: ctx, element });
+		});
+	}, [elements]);
 
-    let element;
+	// Mouse / Touchscreen handlers
+	const handleMouseDown = (event) => {
+		const { clientX, clientY } = event;
 
-    if (
-      toolType === toolTypes.RECTANGLE ||
-      toolType === toolTypes.CIRCLE ||
-      toolType === toolTypes.LINE ||
-      toolType === toolTypes.PENCIL ||
-      toolType === toolTypes.ERASER
-    ) {
-      setAction(actions.DRAWING);
+		let element;
 
-      element = createElement({
-        x1: clientX,
-        y1: clientY,
-        x2: clientX,
-        y2: clientY,
-        toolType,
-        id: uuid(),
-      });
+		if (
+			toolType === toolTypes.RECTANGLE ||
+			toolType === toolTypes.CIRCLE ||
+			toolType === toolTypes.LINE ||
+			toolType === toolTypes.PENCIL ||
+			toolType === toolTypes.ERASER
+		) {
+			setAction(actions.DRAWING);
 
-      setSelectedElement(element);
-      dispatch(updateElementInStore(element));
-    } else if (toolType === toolTypes.TEXT) {
-      const input = document.createElement("input");
-      input.style.position = "absolute";
-      input.style.left = `${clientX}px`;
-      input.style.top = `${clientY}px`;
-      input.style.opacity = 1;
+			element = createElement({
+				x1: clientX,
+				y1: clientY,
+				x2: clientX,
+				y2: clientY,
+				toolType,
+				id: uuid(),
+			});
 
-      const submitInput = () => {
-        element = createElement({
-          x1: clientX,
-          y1: clientY,
-          toolType,
-          id: uuid(),
-          text: input.value,
-        });
-        setSelectedElement(element);
+			setSelectedElement(element);
+			dispatch(
+				updateOrSetElements({ payload: element, myOwnChange: true })
+			);
+		} else if (toolType === toolTypes.TEXT) {
+			const input = document.createElement("input");
+			input.style.position = "absolute";
+			input.style.left = `${clientX}px`;
+			input.style.top = `${clientY}px`;
+			input.style.opacity = 1;
 
-        dispatch(updateElementInStore(element));
-        dispatch(setElements([...elements, element]));
-        document.body.removeChild(input);
-        document.removeEventListener("mousedown", handleOutsideClick);
-      };
+			const submitInput = () => {
+				element = createElement({
+					x1: clientX,
+					y1: clientY,
+					toolType,
+					id: uuid(),
+					text: input.value,
+				});
+				setSelectedElement(element);
 
-      const cancelInput = () => {
-        document.body.removeChild(input);
-        document.removeEventListener("mousedown", handleOutsideClick);
-      };
+				dispatch(
+					updateOrSetElements({ payload: element, myOwnChange: true })
+				);
+				document.body.removeChild(input);
+				document.removeEventListener("mousedown", handleOutsideClick);
+			};
 
-      input.onkeydown = (event) => {
-        if (event.key === "Enter") {
-          submitInput();
-        } else if (event.key === "Escape") {
-          cancelInput();
-        }
-      };
+			const cancelInput = () => {
+				document.body.removeChild(input);
+				document.removeEventListener("mousedown", handleOutsideClick);
+			};
 
-      const handleOutsideClick = (event) => {
-        if (event.target !== input && input.text) {
-          submitInput();
-        }
-      };
-      document.addEventListener("mousedown", handleOutsideClick);
+			input.onkeydown = (event) => {
+				if (event.key === "Enter") {
+					submitInput();
+				} else if (event.key === "Escape") {
+					cancelInput();
+				}
+			};
 
-      input.onblur = submitInput;
-      document.body.appendChild(input);
+			const handleOutsideClick = (event) => {
+				if (event.target !== input && input.text) {
+					submitInput();
+				}
+			};
+			document.addEventListener("mousedown", handleOutsideClick);
 
-      setTimeout(() => input.focus(), 0);
-    }
-  };
+			input.onblur = submitInput;
+			document.body.appendChild(input);
 
-  const handleMouseUp = () => {
-    if (action === actions.DRAWING) {
-      setAction(null);
-      setSelectedElement(null);
-    }
-  };
+			setTimeout(() => input.focus(), 0);
+		}
+	};
 
-  const handleMouseMove = (event) => {
-    const { clientX, clientY } = event;
+	const handleMouseUp = () => {
+		if (action === actions.DRAWING) {
+			setAction(null);
+			setSelectedElement(null);
+		}
+	};
 
-    // Update the position of the custom cursor
-    if (cursor) {
-      cursor.style.left = `${clientX}px`;
-      cursor.style.top = `${clientY}px`;
-    }
+	const handleMouseMove = (event) => {
+		const { clientX, clientY } = event;
 
-    if (action === actions.DRAWING) {
-      // find index of selected element
-      const index = elements.findIndex((el) => el.id === selectedElement.id);
+		// Update the position of the custom cursor
+		if (cursor) {
+			cursor.style.left = `${clientX}px`;
+			cursor.style.top = `${clientY}px`;
+		}
 
-      if (index !== -1) {
-        updateElement(
-          {
-            index,
-            id: elements[index].id,
-            x1: elements[index].x1,
-            y1: elements[index].y1,
-            x2: clientX,
-            y2: clientY,
-            type: elements[index].type,
-          },
-          elements
-        );
-      }
-    }
-  };
+		if (action === actions.DRAWING) {
+			// find index of selected element
+			const index = elements.findIndex(
+				(el) => el.id === selectedElement.id
+			);
 
-  const handleTouchStart = (event) => {
-    const { clientX, clientY } = event.touches[0];
-    handleMouseDown({ clientX, clientY });
-  };
+			if (index !== -1) {
+				updateElement(
+					{
+						index,
+						id: elements[index].id,
+						x1: elements[index].x1,
+						y1: elements[index].y1,
+						x2: clientX,
+						y2: clientY,
+						type: elements[index].type,
+					},
+					elements
+				);
+			}
+		}
+	};
 
-  const handleTouchEnd = (event) => {
-    handleMouseUp();
-  };
+	const handleTouchStart = (event) => {
+		const { clientX, clientY } = event.touches[0];
+		handleMouseDown({ clientX, clientY });
+	};
 
-  const handleTouchMove = (event) => {
-    const { clientX, clientY } = event.touches[0];
-    handleMouseMove({ clientX, clientY });
-  };
+	const handleTouchEnd = (event) => {
+		handleMouseUp();
+	};
 
-  if (error.visible) {
-    // disable error for now
-    setError({ visible: false, message: error.message });
-    return (
-      <ErrorOverlay
-        message={error.message}
-        visible={error.visible}
-        setVisible={() =>
-          setError({
-            visible: true,
-            error: error.message,
-          })
-        }
-        // link={"/"}
-        buttonText="Go Back"
-      />
-    );
-  }
+	const handleTouchMove = (event) => {
+		const { clientX, clientY } = event.touches[0];
+		handleMouseMove({ clientX, clientY });
+	};
 
-  return (
-    <div className="relative">
-      <Menu setAction={setAction} />
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-4">
-        {room === "offline" ? (
-          <div className="flex flex-col items-center">
-            <span
-              className="italic mb-2"
-              title="You are in offline mode because the backend server didn't give a response."
-            >
-              Offline Mode
-            </span>
-            {elements.length > 0 ? (
-              <button
-                onClick={() => {
-                  localStorage.removeItem("elements");
-                  dispatch(setElements([]));
-                }}
-                className="underline text-blue-500 px-1 py-0.5"
-              >
-                Clear Local Canvas
-              </button>
-            ) : (
-              ""
-            )}
-          </div>
-        ) : (
-          `Room: ${room}`
-        )}
-      </div>
-      {elements.length > 0 && (
-        <button
-          onClick={() => {
-            const canvas = document.getElementById("whiteboard-canvas");
-            const tempCanvas = document.createElement("canvas");
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const ctx = tempCanvas.getContext("2d");
+	if (error.visible) {
+		// disable error for now
+		setError({ visible: false, message: error.message });
+		return (
+			<ErrorOverlay
+				message={error.message}
+				visible={error.visible}
+				setVisible={() =>
+					setError({
+						visible: true,
+						error: error.message,
+					})
+				}
+				// link={"/"}
+				buttonText="Go Back"
+			/>
+		);
+	}
 
-            // Draw a white background
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+	return (
+		<div className="relative">
+			<Menu setAction={setAction} />
+			<div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-4">
+				{room === "offline" ? (
+					<div className="flex flex-col items-center">
+						<span
+							className="italic mb-2"
+							title="You are in offline mode because the backend server didn't give a response."
+						>
+							Offline Mode
+						</span>
+						{elements.length > 0 ? (
+							<button
+								onClick={() => {
+									localStorage.removeItem("elements");
+									dispatch(clearElements([]));
+								}}
+								className="underline text-blue-500 px-1 py-0.5"
+							>
+								Clear Local Canvas
+							</button>
+						) : (
+							""
+						)}
+					</div>
+				) : (
+					`Room: ${room}`
+				)}
+			</div>
+			{elements.length > 0 && (
+				<button
+					onClick={() => {
+						const canvas =
+							document.getElementById("whiteboard-canvas");
+						const tempCanvas = document.createElement("canvas");
+						tempCanvas.width = canvas.width;
+						tempCanvas.height = canvas.height;
+						const ctx = tempCanvas.getContext("2d");
 
-            // Draw the original canvas on top
-            ctx.drawImage(canvas, 0, 0);
+						// Draw a white background
+						ctx.fillStyle = "white";
+						ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-            const imgData = tempCanvas.toDataURL("image/png");
-            const link = document.createElement("a");
-            link.href = imgData;
-            link.download = "whiteboard.png";
-            link.click();
-          }}
-          className="absolute bottom-0 right-0 m-4  bg-purple-800 px-4 py-2 text-white rounded"
-        >
-          <FontAwesomeIcon icon={faSave} />
-        </button>
-      )}
-      <canvas
-        className="touch-none cursor-none"
-        id={"whiteboard-canvas"}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseMove={handleMouseMove}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
-      />
-    </div>
-  );
+						// Draw the original canvas on top
+						ctx.drawImage(canvas, 0, 0);
+
+						const imgData = tempCanvas.toDataURL("image/png");
+						const link = document.createElement("a");
+						link.href = imgData;
+						link.download = "whiteboard.png";
+						link.click();
+					}}
+					className="absolute bottom-0 right-0 m-4  bg-purple-800 px-4 py-2 text-white rounded"
+				>
+					<FontAwesomeIcon icon={faSave} />
+				</button>
+			)}
+			<canvas
+				className="touch-none cursor-none"
+				id={"whiteboard-canvas"}
+				onMouseDown={handleMouseDown}
+				onMouseUp={handleMouseUp}
+				onMouseMove={handleMouseMove}
+				onTouchStart={handleTouchStart}
+				onTouchMove={handleTouchMove}
+				onTouchEnd={handleTouchEnd}
+				ref={canvasRef}
+				width={window.innerWidth}
+				height={window.innerHeight}
+			/>
+		</div>
+	);
 };
 export default Whiteboard;

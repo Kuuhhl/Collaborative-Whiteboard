@@ -1,25 +1,35 @@
 import React, { useEffect, useState } from "react";
 import ErrorOverlay from "../../components/ErrorOverlay";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const JoinRoom = () => {
-	const baseUrl = "https://localhost:39291";
+	const [searchParams] = useSearchParams();
 	const [roomCode, setRoomCode] = useState("");
 	const [error, setError] = useState({ visible: false, message: "" });
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		fetch(`${baseUrl}/ping`)
+		fetch(
+			(process.env.BACKEND_BASE_URL || "http://localhost:39291") + "/ping"
+		)
 			.then((response) => {
 				if (!response.ok) {
 					throw new Error("Server is down");
 				}
-				return response.json();
 			})
 			.catch((error) => {
 				navigate(`/?room=offline`);
 			});
-	}, [baseUrl, navigate]);
+	}, [navigate]);
+
+	useEffect(() => {
+		if (searchParams.get("error")) {
+			setError({
+				visible: true,
+				message: searchParams.get("error"),
+			});
+		}
+	}, [searchParams]);
 
 	const handleSubmitJoin = (e) => {
 		e.preventDefault();
@@ -28,13 +38,18 @@ const JoinRoom = () => {
 			navigate(`/?room=${roomCode}`);
 		}
 	};
+
 	const handleSubmitCreate = async (event) => {
 		event.preventDefault();
 
 		try {
-			const response = await fetch(`${baseUrl}/createRoom`, {
-				method: "POST",
-			});
+			const response = await fetch(
+				(process.env.BACKEND_BASE_URL || "http://localhost:39291") +
+					"/createRoom",
+				{
+					method: "POST",
+				}
+			);
 			if (!response.ok) {
 				throw new Error(await response.text());
 			}

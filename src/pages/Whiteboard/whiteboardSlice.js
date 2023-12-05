@@ -1,3 +1,4 @@
+import { sendUpdateMessage } from "./utils/socket";
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
@@ -16,37 +17,48 @@ const whiteboardSlice = createSlice({
 		setOfflineMode: (state, action) => {
 			state.offline_mode = action.payload;
 		},
-		updateElement: (state, action) => {
-			const { id } = action.payload;
 
-			const index = state.elements.findIndex(
-				(element) => element.id === id
-			);
+		updateOrSetElements: (state, action) => {
+			const { payload, myOwnChange = true } = action.payload;
+			const updateOrAddElement = (payloadElement) => {
+				const index = state.elements.findIndex(
+					(element) => element.id === payloadElement.id
+				);
+				if (index !== -1) {
+					state.elements[index] = payloadElement;
+				} else {
+					state.elements.push(payloadElement);
+				}
+			};
 
-			if (index === -1) {
-				state.elements.push(action.payload);
+			if (Array.isArray(payload)) {
+				payload.forEach(updateOrAddElement);
 			} else {
-				// if index will be found
-				// update element in our array of elements
+				updateOrAddElement(payload);
 
-				state.elements[index] = action.payload;
+				if (myOwnChange) {
+					sendUpdateMessage(payload);
+				}
 			}
-		},
-		setElements: (state, action) => {
-			state.elements = action.payload;
 
-			// add elements to local storage if in offline mode
 			if (state.offline_mode) {
 				localStorage.setItem(
 					"elements",
-					JSON.stringify(action.payload)
+					JSON.stringify(state.elements)
 				);
 			}
+		},
+		clearElements: (state) => {
+			state.elements = [];
 		},
 	},
 });
 
-export const { setToolType, setOfflineMode, updateElement, setElements } =
-	whiteboardSlice.actions;
+export const {
+	setToolType,
+	setOfflineMode,
+	updateOrSetElements,
+	clearElements,
+} = whiteboardSlice.actions;
 
 export default whiteboardSlice.reducer;

@@ -21,6 +21,7 @@
 		"react-router-dom": "^6.18.0",
 		"react-scripts": "5.0.1",
 		"roughjs": "^4.6.5",
+		"socket.io-client": "^4.7.2",
 		"tailwind": "^4.0.0",
 		"uuid": "^9.0.1",
 		"web-vitals": "^2.1.4"

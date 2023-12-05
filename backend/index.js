@@ -59,6 +59,12 @@ const redisClient = new Redis([
 		port: process.env.REDIS_PORT,
 	},
 ]);
+redisClient.on("connect", () => {
+	console.log("Connected to Redis");
+});
+redisClient.on("error", (err) => {
+	console.error("Error connecting to Redis: ", err);
+});
 const subClient = redisClient.duplicate();
 const pubClient = redisClient.duplicate();
 io.adapter(createAdapter(pubClient, subClient));

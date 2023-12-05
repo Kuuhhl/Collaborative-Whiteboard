@@ -12,6 +12,7 @@
 		"url": "git+https://github.com/Kuuhhl/Collaborative-Whiteboard-Backend.git"
 	},
 	"author": "",
+	"license": "GPL-2.0",
 	"bugs": {
 		"url": "https://github.com/Kuuhhl/Collaborative-Whiteboard-Backend/issues"
 	},

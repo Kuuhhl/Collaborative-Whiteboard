@@ -13,3 +13,4 @@ COPY checkEnvVars.sh /checkEnvVars.sh
 RUN chmod +x /checkEnvVars.sh
 EXPOSE 80
 CMD /checkEnvVars.sh && nginx -g 'daemon off;'
+

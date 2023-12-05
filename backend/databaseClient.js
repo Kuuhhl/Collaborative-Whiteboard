@@ -10,7 +10,13 @@ export default class DatabaseClient {
 	}
 
 	async connect() {
-		await this.client.connect();
+		try {
+			await this.client.connect();
+		} catch (error) {
+			console.error(`Error connecting to MongoDB: ${error}`);
+			throw error;
+		}
+		console.log("Connected to MongoDB");
 		this.db = this.client.db(this.dbName);
 
 		// Create indexes

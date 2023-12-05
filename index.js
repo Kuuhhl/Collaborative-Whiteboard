@@ -1,66 +1,178 @@
 import express from "express";
+import cookie from "cookie";
 import { Server } from "socket.io";
-import { createAdapter } from "socket.io-redis";
-import { createClient } from "redis";
-import {
-	checkSession,
-	removeSession,
-	addSession,
-	getRoomElements,
-	addElementToRoom,
-	removeElementFromRoom,
-} from "./databaseClient.js";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { Redis } from "ioredis";
+import DatabaseClient from "./databaseClient.js";
 import http from "http";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+
+// Initialize app and middleware
 const app = express();
+app.use(cookieParser());
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(express.static("public"));
+app.use(express.json());
+
+// Initialize database client
+const db_client = new DatabaseClient("mongodb://localhost:27017", "whiteboard");
+await db_client.connect();
+
+// Initialize server
 const server = http.createServer(app);
+const io = new Server(server, {
+	cors: {
+		origin: "http://localhost:3000",
+		methods: ["GET", "POST"],
+		credentials: true,
+	},
+});
 
-app.get("/joinRoom", (req, res) => {
-	// get sessionid and roomcode
-	const sessionId = req.sessionId;
-	const roomCode = req.query.roomCode;
+// Initialize Redis clients
+const redisClient = new Redis([
+	{
+		host: "localhost",
+		port: 6379,
+	},
+]);
+const subClient = redisClient.duplicate();
+const pubClient = redisClient.duplicate();
+io.adapter(createAdapter(pubClient, subClient));
 
-	// logout first before joining new room
-	// if user exists
-	if (!checkSession(sessionId)) {
-		removeSession(sessionId);
-	}
+// Define routes
+app.get("/ping", handlePing);
+app.post("/joinRoom", handleJoinRoom);
+app.post("/createRoom", handleCreateRoom);
 
-	// check if room exists
+// Start server
+server.listen(39291, () => {
+	console.log("server running at ws://localhost:39291/");
+});
+
+// Helper functions
+
+function handlePing(req, res) {
+	res.status(200).send("pong");
+}
+
+async function handleJoinRoom(req, res) {
+	// get room code
+	const roomCode = req.body.roomCode;
+
 	if (!roomCode) {
-		res.status(400).send("Room does not exist");
+		res.status(400).json({ message: "Room code not specified." });
 		return;
 	}
 
-	// add user to room
-	addSession({ sessionId: sessionId, roomCode: req.query.roomCode });
+	// check if room exists
+	if (!(await db_client.checkRoom(roomCode))) {
+		res.status(400).json({
+			message: `Room ${roomCode} does not exist.`,
+		});
+		return;
+	}
+
+	// remove socketio mapping from redis if it exists
+	let cookies = {};
+	if (req.headers.cookie) {
+		cookies = cookie.parse(req.headers.cookie);
+	}
+	const oldSessionId = cookies.sessionId;
+	if (oldSessionId) {
+		try {
+			await redisClient.del(`socket_sessions:${oldSessionId}`);
+		} catch (err) {
+			console.error("Error deleting socketio mapping from redis: ", err);
+		}
+	}
+	// clear the existing sessionId cookie
+	res.clearCookie("sessionId");
+
+	// add a new session
+	const sessionId = await db_client.addSession(roomCode);
 
 	// send all elements in room to user
-	res.status(200).send(getRoomElements(roomCode));
-});
-const io = new Server();
+	let roomElements;
+	try {
+		roomElements = await db_client.getAllElements(sessionId);
+	} catch (error) {
+		res.status(500).json({ message: `Error getting elements: ${error}` });
+		return;
+	}
 
-// redis adapter to share websocket connections across multiple instances of the server
-const pubClient = createClient({ host: "localhost", port: 6379 });
-const subClient = pubClient.duplicate();
+	res.cookie("sessionId", sessionId, {
+		httpOnly: true,
+		sameSite: "Strict",
+		secure: process.env.NODE_ENV === "production",
+	});
 
-io.adapter(createAdapter(pubClient, subClient));
+	res.status(200).json({ elements: roomElements });
+}
+async function handleCreateRoom(req, res) {
+	// create room
+	let roomCode;
+	try {
+		roomCode = await db_client.addRoom();
+	} catch (error) {
+		res.status(500).json({ message: `Error creating room: ${error}` });
+		return;
+	}
+
+	res.status(200).json({ roomCode: roomCode });
+}
 
 // send updates to all users in the room
-io.on("connection", (socket) => {
-	socket.on("update", (sessionId, update) => {
-		if (checkSession(sessionId)) {
-			if (update.action === "add") {
-				addElementToRoom(sessionId, update.element);
-			} else if (update.action === "remove") {
-				removeElementFromRoom(sessionId, update.element);
-			}
-			io.to(update.room).emit("update", update);
-		} else {
-			socket.emit("error", { code: 401, message: "Invalid session ID" });
-		}
-	});
-});
+io.on("connection", async (socket) => {
+	let sessionId = "";
+	if (socket.handshake.headers.cookie) {
+		sessionId = cookie.parse(socket.handshake.headers.cookie).sessionId;
+	}
 
-server.listen(39291, () => {
-	console.log("server running at ws://localhost:39291/");
+	// error if no sessionId provided
+	if (!sessionId) {
+		io.emit("error", "No session id provided");
+		socket.disconnect();
+		return;
+	}
+
+	if (!(await db_client.checkSession(sessionId))) {
+		io.emit("error", "Session with your Session-ID does not exist. ");
+		socket.disconnect();
+		return;
+	}
+
+	// Associate the socket.id with the sessionId in Redis
+	redisClient.set(`socket_sessions:${sessionId}`, socket.id);
+
+	socket.on("disconnect", () => {
+		// Remove the association from Redis when the socket disconnects
+		redisClient.del(`socket_sessions:${sessionId}`);
+		db_client.removeSession(sessionId);
+	});
+
+	socket.on("update", async (update) => {
+		const affected_sessionIds = await db_client.addOrUpdateElement(
+			sessionId,
+			update.element
+		);
+		// find all sockets associated with the affected sessionIds
+		redisClient.mget(
+			affected_sessionIds.map(
+				(sessionId) => `socket_sessions:${sessionId}`
+			),
+			(err, socketIds) => {
+				if (err) {
+					console.error("Error getting socket IDs from Redis:", err);
+					return;
+				}
+				// Emit the update to all sockets associated with the affected sessionIds
+				socketIds.forEach((socketId) => {
+					if (socketId) {
+						socket.to(socketId).emit("update", update.element);
+					}
+				});
+			}
+		);
+	});
 });

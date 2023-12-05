@@ -1,23 +1,27 @@
 name: Docker Image CI
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
 
 jobs:
+    build:
+        runs-on: ubuntu-latest
 
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag whiteboard-backend:$(date +%s)
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: whiteboard-backend
-        path: whiteboard-backend
+        steps:
+            - uses: actions/checkout@v3
+            - name: Build the Docker image
+              run: docker build . --file Dockerfile --tag whiteboard-backend:$(date +%s)
+            - name: Login to DockerHub
+              run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            - name: Tag Docker image
+              run: docker tag whiteboard-backend:$(date +%s) ${{ secrets.DOCKERHUB_USERNAME }}/whiteboard-backend:$(date +%s)
+            - name: Push Docker image to DockerHub
+              run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/whiteboard-backend:$(date +%s)
+            - name: Upload Docker image artifact
+              uses: actions/upload-artifact@v2
+              with:
+                  name: whiteboard-backend
+                  path: whiteboard-backend

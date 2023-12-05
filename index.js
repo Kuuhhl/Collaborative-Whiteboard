@@ -11,19 +11,27 @@ import cookieParser from "cookie-parser";
 // Initialize app and middleware
 const app = express();
 app.use(cookieParser());
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(
+	cors({
+		origin: process.env.FRONTEND_BASE_URL || "http://localhost:3000",
+		credentials: true,
+	})
+);
 app.use(express.static("public"));
 app.use(express.json());
 
 // Initialize database client
-const db_client = new DatabaseClient("mongodb://localhost:27017", "whiteboard");
+const db_client = new DatabaseClient(
+	process.env.DB_URL || "mongodb://localhost:27017",
+	process.env.DB_NAME || "whiteboard"
+);
 await db_client.connect();
 
 // Initialize server
 const server = http.createServer(app);
 const io = new Server(server, {
 	cors: {
-		origin: "http://localhost:3000",
+		origin: process.env.FRONTEND_BASE_URL || "http://localhost:3000",
 		methods: ["GET", "POST"],
 		credentials: true,
 	},
@@ -32,8 +40,8 @@ const io = new Server(server, {
 // Initialize Redis clients
 const redisClient = new Redis([
 	{
-		host: "localhost",
-		port: 6379,
+		host: process.env.REDIS_HOST || "localhost",
+		port: process.env.REDIS_PORT || 6379,
 	},
 ]);
 const subClient = redisClient.duplicate();
@@ -47,7 +55,10 @@ app.post("/createRoom", handleCreateRoom);
 
 // Start server
 server.listen(39291, () => {
-	console.log("server running at ws://localhost:39291/");
+	const addr = server.address();
+	console.log(
+		`server running at ws://${addr.address}:${addr.port}/ / http://${addr.address}:${addr.port}/`
+	);
 });
 
 // Helper functions

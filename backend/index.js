@@ -22,8 +22,8 @@ app.use(express.json());
 
 // Initialize database client
 const db_client = new DatabaseClient(
-	process.env.DB_URL || "mongodb://localhost:27017",
-	process.env.DB_NAME || "whiteboard"
+	process.env.MONGO_DB_URL || "mongodb://localhost:27017",
+	process.env.MONGO_DB_NAME || "whiteboard"
 );
 await db_client.connect();
 

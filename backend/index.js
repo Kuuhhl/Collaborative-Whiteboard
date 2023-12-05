@@ -8,12 +8,27 @@ import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+// check if all required environment variables are set
+const requiredEnvVars = [
+	"MONGO_DB_URL",
+	"MONGO_DB_NAME",
+	"REDIS_HOST",
+	"REDIS_PORT",
+	"FRONTEND_BASE_URL",
+];
+
+requiredEnvVars.forEach((varName) => {
+	if (!process.env[varName]) {
+		console.error(`${varName} environment variable not set.`);
+		process.exit(1);
+	}
+});
 // Initialize app and middleware
 const app = express();
 app.use(cookieParser());
 app.use(
 	cors({
-		origin: process.env.FRONTEND_BASE_URL || "http://localhost:3000",
+		origin: process.env.FRONTEND_BASE_URL,
 		credentials: true,
 	})
 );
@@ -22,8 +37,8 @@ app.use(express.json());
 
 // Initialize database client
 const db_client = new DatabaseClient(
-	process.env.MONGO_DB_URL || "mongodb://localhost:27017",
-	process.env.MONGO_DB_NAME || "whiteboard"
+	process.env.MONGO_DB_URL,
+	process.env.MONGO_DB_NAME
 );
 await db_client.connect();
 
@@ -31,7 +46,7 @@ await db_client.connect();
 const server = http.createServer(app);
 const io = new Server(server, {
 	cors: {
-		origin: process.env.FRONTEND_BASE_URL || "http://localhost:3000",
+		origin: process.env.FRONTEND_BASE_URL,
 		methods: ["GET", "POST"],
 		credentials: true,
 	},
@@ -40,8 +55,8 @@ const io = new Server(server, {
 // Initialize Redis clients
 const redisClient = new Redis([
 	{
-		host: process.env.REDIS_HOST || "localhost",
-		port: process.env.REDIS_PORT || 6379,
+		host: process.env.REDIS_HOST,
+		port: process.env.REDIS_PORT,
 	},
 ]);
 const subClient = redisClient.duplicate();

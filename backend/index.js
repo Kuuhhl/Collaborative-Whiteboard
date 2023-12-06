@@ -26,12 +26,14 @@ requiredEnvVars.forEach((varName) => {
 // Initialize app and middleware
 const app = express();
 app.use(cookieParser());
-app.use(
+app.use((req, res, next) => {
 	cors({
-		origin: process.env.FRONTEND_BASE_URL,
+		origin: process.env.ALLOW_ALL_CORS_ORIGINS
+			? req.headers.origin
+			: process.env.FRONTEND_BASE_URL,
 		credentials: true,
-	})
-);
+	})(req, res, next);
+});
 app.use(express.static("public"));
 app.use(express.json());
 

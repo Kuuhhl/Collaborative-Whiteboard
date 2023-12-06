@@ -148,7 +148,7 @@ async function handleJoinRoom(req, res) {
 
 	res.cookie("sessionId", sessionId, {
 		httpOnly: true,
-		sameSite: "Strict",
+		sameSite: "none",
 		secure: process.env.NODE_ENV === "production",
 	});
 

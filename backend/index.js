@@ -48,7 +48,16 @@ await db_client.connect();
 const server = http.createServer(app);
 const io = new Server(server, {
 	cors: {
-		origin: process.env.FRONTEND_BASE_URL,
+		origin: (origin, callback) => {
+			if (
+				process.env.ALLOW_ALL_ORIGINS === "true" ||
+				origin === process.env.FRONTEND_BASE_URL
+			) {
+				callback(null, true);
+			} else {
+				callback(new Error("Not allowed by CORS"));
+			}
+		},
 		methods: ["GET", "POST"],
 		credentials: true,
 	},
@@ -139,7 +148,7 @@ async function handleJoinRoom(req, res) {
 
 	res.cookie("sessionId", sessionId, {
 		httpOnly: true,
-		sameSite: "Strict",
+		sameSite: "none",
 		secure: process.env.NODE_ENV === "production",
 	});
 

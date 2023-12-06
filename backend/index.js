@@ -53,12 +53,11 @@ const io = new Server(server, {
 });
 
 // Initialize Redis clients
-const redisClient = new Redis([
-	{
-		host: process.env.REDIS_HOST,
-		port: process.env.REDIS_PORT,
-	},
-]);
+const redisClient = new Redis({
+	host: process.env.REDIS_HOST,
+	port: process.env.REDIS_PORT,
+});
+
 console.log(
 	`Connecting to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
 );

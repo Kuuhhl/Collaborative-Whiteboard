@@ -11,6 +11,14 @@ import "./index.css";
 const container = document.getElementById("root");
 const root = createRoot(container);
 
+// This is a hack to get the backend base url from the environment variables
+if (
+	process.env.REACT_APP_BACKEND_BASE_URL &&
+	window.BACKEND_BASE_URL === "BACKEND_BASE_URL"
+) {
+	window.BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_BASE_URL;
+}
+
 root.render(
 	<React.StrictMode>
 		<Provider store={store}>

@@ -59,10 +59,8 @@ const Whiteboard = () => {
 
 			// online
 			try {
-				console.log(process.env.BACKEND_BASE_URL);
-
 				const response = await fetch(
-					process.env.BACKEND_BASE_URL + "/joinRoom",
+					window.BACKEND_BASE_URL + "/joinRoom",
 					{
 						method: "POST",
 						headers: {

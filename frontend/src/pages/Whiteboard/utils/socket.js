@@ -5,7 +5,7 @@ import { updateOrSetElements } from "../whiteboardSlice";
 let socket;
 
 export const connectToServer = () => {
-	socket = io(process.env.BACKEND_BASE_URL, {
+	socket = io(window.BACKEND_BASE_URL, {
 		withCredentials: true,
 	});
 };

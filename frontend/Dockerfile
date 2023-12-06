@@ -9,8 +9,7 @@ RUN npm run build
 FROM nginx:1.19.0-alpine as serve
 
 COPY --from=build /app/build /usr/share/nginx/html
-COPY checkEnvVars.sh /checkEnvVars.sh
-RUN chmod +x /checkEnvVars.sh
+COPY --from=build /app/entrypoint.sh /usr/share/nginx/html
+RUN chmod +x /usr/share/nginx/html/entrypoint.sh
 EXPOSE 80
-CMD /checkEnvVars.sh && nginx -g 'daemon off;'
-
+ENTRYPOINT ["/usr/share/nginx/html/entrypoint.sh"]

@@ -203,22 +203,27 @@ io.on("connection", async (socket) => {
 			update.element
 		);
 		// find all sockets associated with the affected sessionIds
-		redisClient.mget(
-			affected_sessionIds.map(
-				(sessionId) => `socket_sessions:${sessionId}`
-			),
-			(err, socketIds) => {
-				if (err) {
-					console.error("Error getting socket IDs from Redis:", err);
-					return;
-				}
-				// Emit the update to all sockets associated with the affected sessionIds
-				socketIds.forEach((socketId) => {
-					if (socketId) {
-						socket.to(socketId).emit("update", update.element);
+		if (affected_sessionIds.length > 0) {
+			redisClient.mget(
+				affected_sessionIds.map(
+					(sessionId) => `socket_sessions:${sessionId}`
+				),
+				(err, socketIds) => {
+					if (err) {
+						console.error(
+							"Error getting socket IDs from Redis:",
+							err
+						);
+						return;
 					}
-				});
-			}
-		);
+					// Emit the update to all sockets associated with the affected sessionIds
+					socketIds.forEach((socketId) => {
+						if (socketId) {
+							socket.to(socketId).emit("update", update.element);
+						}
+					});
+				}
+			);
+		}
 	});
 });

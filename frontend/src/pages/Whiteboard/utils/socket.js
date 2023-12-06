@@ -7,6 +7,7 @@ let socket;
 export const connectToServer = () => {
 	socket = io(window.BACKEND_BASE_URL, {
 		withCredentials: true,
+		transports: ["websocket"],
 	});
 };
 

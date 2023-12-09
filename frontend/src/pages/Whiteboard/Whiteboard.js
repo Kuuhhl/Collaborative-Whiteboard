@@ -27,6 +27,9 @@ const Whiteboard = () => {
 	const navigate = useNavigate();
 	const [error, setError] = useState({ visible: false, message: "" });
 	const [cursor, setCursor] = useState(null);
+	const [loadingStatus, setLoadingStatus] = useState(
+		"Loading Whiteboard Elements..."
+	);
 
 	// get room code
 	const location = useLocation();
@@ -54,6 +57,7 @@ const Whiteboard = () => {
 						updateOrSetElements({ elements, myOwnChange: false })
 					);
 				}
+				setLoadingStatus("");
 				return;
 			}
 
@@ -86,11 +90,15 @@ const Whiteboard = () => {
 					})
 				);
 
+				setLoadingStatus("Connecting to Server...");
+
 				// Connect to socketio
 				connectToServer();
 
 				// add socketio listener
 				listenToUpdateMessage();
+
+				setLoadingStatus("");
 			} catch (e) {
 				if (e.name === "TypeError") {
 					setError({
@@ -326,6 +334,12 @@ const Whiteboard = () => {
 
 	return (
 		<div className="relative">
+			{loadingStatus !== "" && (
+				<div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-50">
+					<div className="w-12 h-12 border-t-4 border-blue-500 rounded-full animate-spin"></div>
+					<p className="mt-2 text-white">{loadingStatus}</p>
+				</div>
+			)}
 			<Menu setAction={setAction} />
 			<div className="absolute bottom-0 left-0 right-0 flex justify-center items-center p-4">
 				{room === "offline" ? (

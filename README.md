@@ -11,7 +11,7 @@
   <img src="frontend/assets/icon.png" alt="Logo" width="120" height="120" style="border-radius:15%;">
 
   <h3 align="center">Collaborative Whiteboard</h3>
-  <p align="center">A platform for collaborative sketching and brainstorming</p>
+  <p align="center">A platform for collaborative sketching and brainstorming.</p>
 </p>
 
 <div align="center" style="display: flex; flex-direction: column;">

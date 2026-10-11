@@ -54,7 +54,7 @@ const Whiteboard = () => {
 				const elements = JSON.parse(localStorage.getItem("elements"));
 				if (elements && elements !== "") {
 					dispatch(
-						updateOrSetElements({ elements, myOwnChange: false })
+						updateOrSetElements({ payload: elements, myOwnChange: false })
 					);
 				}
 				setLoadingStatus("");

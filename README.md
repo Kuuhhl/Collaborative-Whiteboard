@@ -16,7 +16,7 @@
 
 <div align="center" style="display: flex; flex-direction: column;">
   <a href="https://whiteboard.landmann.ph/">
-    <img src="https://img.shields.io/badge/Try it out!-00358a?style=for-the-badge&logo=google-chrome&logoColor=white">
+    <img src="https://img.shields.io/badge/Try it out-00358a?style=for-the-badge&logo=google-chrome&logoColor=white">
   </a>
 </div>
 

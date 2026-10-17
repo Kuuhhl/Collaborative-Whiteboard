@@ -1,12 +1,12 @@
-FROM node:14.0.0-alpine3.10 as build
+FROM node:20-alpine as build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . ./
 RUN npm run build
 
-FROM nginx:1.19.0-alpine as serve
+FROM nginx:1.27-alpine as serve
 
 COPY --from=build /app/build /usr/share/nginx/html
 COPY --from=build /app/entrypoint.sh /usr/share/nginx/html

@@ -1,0 +1,87 @@
+name: Provision Frontend
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/modules/frontend/**"
+      - "infra/terraform/main.tf"
+      - "infra/terraform/providers.tf"
+      - "infra/terraform/variables.tf"
+      - "infra/terraform/outputs.tf"
+  pull_request:
+    paths:
+      - "infra/terraform/modules/frontend/**"
+      - "infra/terraform/main.tf"
+      - "infra/terraform/providers.tf"
+      - "infra/terraform/variables.tf"
+      - "infra/terraform/outputs.tf"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: provision-frontend
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch static secrets from Infisical
+        uses: Infisical/secrets-action@v1.0.16
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: prod
+          secret-path: /static
+          export-type: env
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: terraform init
+
+      - name: Terraform Format
+        working-directory: infra/terraform
+        run: terraform fmt -check
+
+      - name: Terraform Plan
+        working-directory: infra/terraform
+        run: terraform plan -input=false -target=module.frontend
+
+      - name: Terraform Apply
+        if: github.event_name != 'pull_request'
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve -input=false -target=module.frontend
+
+      - name: Publish outputs to GitHub variables
+        if: github.event_name != 'pull_request'
+        working-directory: infra/terraform
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: |
+          gh variable set AWS_PRODUCTION_BUCKET_NAME --body "$(terraform output -raw frontend_bucket_name)"
+          gh variable set AWS_CLOUDFRONT_DISTRIBUTION_ID --body "$(terraform output -raw cloudfront_distribution_id)"
+          gh variable set AWS_DEPLOY_ROLE_ARN --body "$(terraform output -raw frontend_deploy_role_arn)"

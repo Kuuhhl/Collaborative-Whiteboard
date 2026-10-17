@@ -3,7 +3,16 @@ name: Build and Push to S3
 on:
   push:
     branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy_frontend_s3.yml"
   pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+  workflow_run:
+    workflows: ["Provision Frontend", "Provision Backend"]
+    types: [completed]
     branches: [main]
 
 permissions:
@@ -27,7 +36,14 @@ jobs:
         working-directory: frontend
 
       - name: Production build
-        run: npm run build
+        env:
+          REACT_APP_BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
+        run: |
+          if [ -z "$REACT_APP_BACKEND_BASE_URL" ]; then
+            echo "::error::BACKEND_BASE_URL repository variable is not set. Run Provision Backend first."
+            exit 1
+          fi
+          npm run build
         working-directory: frontend
 
       - name: Upload build
@@ -38,7 +54,10 @@ jobs:
           if-no-files-found: error
 
   deploy_to_s3:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     needs: build_frontend
     permissions:
@@ -61,7 +80,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: eu-west-1
           role-session-name: GitHubActions-${{ github.run_id }}
 
       - name: Deploy to S3

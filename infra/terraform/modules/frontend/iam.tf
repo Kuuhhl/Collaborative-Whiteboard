@@ -54,9 +54,15 @@ resource "aws_iam_role" "frontend_deploy" {
   name               = "whiteboard-frontend-deploy"
   description        = "Assumed by GitHub Actions via OIDC to sync the frontend to S3 and invalidate CloudFront."
   assume_role_policy = data.aws_iam_policy_document.frontend_deploy_assume.json
+}
 
-  inline_policy {
-    name   = "frontend-deploy"
-    policy = data.aws_iam_policy_document.frontend_deploy.json
-  }
+resource "aws_iam_role_policy" "frontend_deploy" {
+  name   = "frontend-deploy"
+  role   = aws_iam_role.frontend_deploy.name
+  policy = data.aws_iam_policy_document.frontend_deploy.json
+}
+
+resource "aws_iam_role_policies_exclusive" "frontend_deploy" {
+  role_name    = aws_iam_role.frontend_deploy.name
+  policy_names = [aws_iam_role_policy.frontend_deploy.name]
 }

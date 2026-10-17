@@ -1,0 +1,88 @@
+name: Provision Backend
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "infra/terraform/modules/backend/**"
+      - "infra/terraform/main.tf"
+      - "infra/terraform/providers.tf"
+      - "infra/terraform/variables.tf"
+      - "infra/terraform/outputs.tf"
+  pull_request:
+    paths:
+      - "infra/terraform/modules/backend/**"
+      - "infra/terraform/main.tf"
+      - "infra/terraform/providers.tf"
+      - "infra/terraform/variables.tf"
+      - "infra/terraform/outputs.tf"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: provision-backend
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+      TF_VAR_gcp_project_id: ${{ vars.GCP_PROJECT_ID }}
+      TF_VAR_atlas_org_id: ${{ vars.ATLAS_ORG_ID }}
+      TF_VAR_upstash_email: ${{ vars.UPSTASH_EMAIL }}
+      TF_VAR_infisical_project_id: ${{ vars.INFISICAL_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch static secrets from Infisical
+        uses: Infisical/secrets-action@v1.0.16
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: prod
+          secret-path: /static
+          export-type: env
+
+      - name: Authenticate to Google Cloud via OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_PROVISION_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ env.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: terraform init
+
+      - name: Terraform Format
+        working-directory: infra/terraform
+        run: terraform fmt -check
+
+      - name: Terraform Plan
+        working-directory: infra/terraform
+        run: terraform plan -input=false -target=module.backend
+
+      - name: Terraform Apply
+        if: github.event_name != 'pull_request'
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve -input=false -target=module.backend
+
+      - name: Publish backend URL to GitHub variables
+        if: github.event_name != 'pull_request'
+        working-directory: infra/terraform
+        env:
+          GH_TOKEN: ${{ env.GH_TOKEN }}
+        run: gh variable set BACKEND_BASE_URL --body "$(terraform output -raw backend_url)"

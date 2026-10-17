@@ -1,29 +1,23 @@
-name: Provision Backend
+name: Provision
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - "infra/terraform/modules/backend/**"
-      - "infra/terraform/main.tf"
-      - "infra/terraform/providers.tf"
-      - "infra/terraform/variables.tf"
-      - "infra/terraform/outputs.tf"
+      - "infra/terraform/**"
+      - ".github/workflows/provision.yml"
   pull_request:
     paths:
-      - "infra/terraform/modules/backend/**"
-      - "infra/terraform/main.tf"
-      - "infra/terraform/providers.tf"
-      - "infra/terraform/variables.tf"
-      - "infra/terraform/outputs.tf"
+      - "infra/terraform/**"
+      - ".github/workflows/provision.yml"
 
 permissions:
   contents: read
   id-token: write
 
 concurrency:
-  group: provision-backend
+  group: provision
   cancel-in-progress: false
 
 jobs:
@@ -52,6 +46,12 @@ jobs:
           secret-path: /static
           export-type: env
 
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}
+          aws-region: eu-west-1
+
       - name: Authenticate to Google Cloud via OIDC
         uses: google-github-actions/auth@v2
         with:
@@ -73,16 +73,20 @@ jobs:
 
       - name: Terraform Plan
         working-directory: infra/terraform
-        run: terraform plan -input=false -target=module.backend
+        run: terraform plan -input=false
 
       - name: Terraform Apply
         if: github.event_name != 'pull_request'
         working-directory: infra/terraform
-        run: terraform apply -auto-approve -input=false -target=module.backend
+        run: terraform apply -auto-approve -input=false
 
-      - name: Publish backend URL to GitHub variables
+      - name: Publish outputs to GitHub variables
         if: github.event_name != 'pull_request'
         working-directory: infra/terraform
         env:
           GH_TOKEN: ${{ env.GH_TOKEN }}
-        run: gh variable set BACKEND_BASE_URL --body "$(terraform output -raw backend_url)"
+        run: |
+          gh variable set BACKEND_BASE_URL --body "$(terraform output -raw backend_url)"
+          gh variable set AWS_PRODUCTION_BUCKET_NAME --body "$(terraform output -raw frontend_bucket_name)"
+          gh variable set AWS_CLOUDFRONT_DISTRIBUTION_ID --body "$(terraform output -raw cloudfront_distribution_id)"
+          gh variable set AWS_DEPLOY_ROLE_ARN --body "$(terraform output -raw frontend_deploy_role_arn)"

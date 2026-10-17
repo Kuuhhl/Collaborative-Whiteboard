@@ -11,7 +11,7 @@ on:
     paths:
       - "frontend/**"
   workflow_run:
-    workflows: ["Provision Frontend", "Provision Backend"]
+    workflows: ["Provision"]
     types: [completed]
     branches: [main]
 
@@ -41,7 +41,7 @@ jobs:
           REACT_APP_BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
         run: |
           if [ -z "$REACT_APP_BACKEND_BASE_URL" ]; then
-            echo "::error::BACKEND_BASE_URL repository variable is not set. Run Provision Backend first."
+            echo "::error::BACKEND_BASE_URL repository variable is not set. Run Provision first."
             exit 1
           fi
           npm run build

@@ -16,7 +16,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# requires DNS Edit, WAF Edit, and Zone Settings Edit permissions in the zone
+# requires dns edit permissions in the zone
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }

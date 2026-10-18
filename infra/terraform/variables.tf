@@ -27,7 +27,7 @@ variable "frontend_base_url" {
 variable "backend_domain" {
   type        = string
   description = "Custom domain served by the backend Cloud Run service."
-  default     = "backend-whiteboard.landmann.ph"
+  default     = "backend.whiteboard.landmann.ph"
 }
 
 variable "github_repository" {

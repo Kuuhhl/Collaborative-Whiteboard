@@ -1,5 +1,4 @@
 import express from "express";
-import cookie from "cookie";
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Redis } from "ioredis";
@@ -7,6 +6,7 @@ import DatabaseClient from "./databaseClient.js";
 import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { registerWhiteboardSockets } from "./whiteboardSockets.js";
 
 // check if all required environment variables are set
 const requiredEnvVars = [
@@ -65,7 +65,7 @@ const io = new Server(server, {
 });
 
 // Initialize Redis clients
-const redisClient = new Redis({
+const pubClient = new Redis({
 	host: process.env.REDIS_HOST,
 	port: process.env.REDIS_PORT,
 	password: process.env.REDIS_PASSWORD,
@@ -75,14 +75,16 @@ const redisClient = new Redis({
 console.log(
 	`Connecting to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
 );
-redisClient.on("connect", () => {
+pubClient.on("connect", () => {
 	console.log("Connected to Redis");
 });
-redisClient.on("error", (err) => {
+pubClient.on("error", (err) => {
 	console.error("Error connecting to Redis: ", err);
 });
-const subClient = redisClient.duplicate();
-const pubClient = redisClient.duplicate();
+const subClient = pubClient.duplicate();
+subClient.on("error", (err) => {
+	console.error("Error connecting Redis subscriber: ", err);
+});
 io.adapter(createAdapter(pubClient, subClient));
 
 // Define routes
@@ -121,19 +123,6 @@ async function handleJoinRoom(req, res) {
 		return;
 	}
 
-	// remove socketio mapping from redis if it exists
-	let cookies = {};
-	if (req.headers.cookie) {
-		cookies = cookie.parse(req.headers.cookie);
-	}
-	const oldSessionId = cookies.sessionId;
-	if (oldSessionId) {
-		try {
-			await redisClient.del(`socket_sessions:${oldSessionId}`);
-		} catch (err) {
-			console.error("Error deleting socketio mapping from redis: ", err);
-		}
-	}
 	// clear the existing sessionId cookie
 	res.clearCookie("sessionId");
 
@@ -170,62 +159,4 @@ async function handleCreateRoom(req, res) {
 	res.status(200).json({ roomCode: roomCode });
 }
 
-// send updates to all users in the room
-io.on("connection", async (socket) => {
-	let sessionId = "";
-	if (socket.handshake.headers.cookie) {
-		sessionId = cookie.parse(socket.handshake.headers.cookie).sessionId;
-	}
-
-	// error if no sessionId provided
-	if (!sessionId) {
-		io.emit("error", "No session id provided");
-		socket.disconnect();
-		return;
-	}
-
-	if (!(await db_client.checkSession(sessionId))) {
-		io.emit("error", "Session with your Session-ID does not exist. ");
-		socket.disconnect();
-		return;
-	}
-
-	// Associate the socket.id with the sessionId in Redis
-	redisClient.set(`socket_sessions:${sessionId}`, socket.id);
-
-	socket.on("disconnect", () => {
-		// Remove the association from Redis when the socket disconnects
-		redisClient.del(`socket_sessions:${sessionId}`);
-		db_client.removeSession(sessionId);
-	});
-
-	socket.on("update", async (update) => {
-		const affected_sessionIds = await db_client.addOrUpdateElement(
-			sessionId,
-			update.element
-		);
-		// find all sockets associated with the affected sessionIds
-		if (affected_sessionIds.length > 0) {
-			redisClient.mget(
-				affected_sessionIds.map(
-					(sessionId) => `socket_sessions:${sessionId}`
-				),
-				(err, socketIds) => {
-					if (err) {
-						console.error(
-							"Error getting socket IDs from Redis:",
-							err
-						);
-						return;
-					}
-					// Emit the update to all sockets associated with the affected sessionIds
-					socketIds.forEach((socketId) => {
-						if (socketId) {
-							socket.to(socketId).emit("update", update.element);
-						}
-					});
-				}
-			);
-		}
-	});
-});
+registerWhiteboardSockets(io, db_client);

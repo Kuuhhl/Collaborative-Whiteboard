@@ -24,13 +24,15 @@
 
 * `FRONTEND_BASE_URL`
 * `REDIS_HOST`
+* `REDIS_PASSWORD`
 * `REDIS_PORT`
 * `MONGO_DB_URL`
 * `MONGO_DB_NAME`
+* `PORT`
 
 ## Client <-> Server interaction
 
-1. Clients establish bidirectional connection with the server using `socket.io`. To support multiple backend instances and maintain a mapping of socket.io connections to Session-IDs, a Redis Socket.io Adapter is used.
+1. Clients establish bidirectional connection with the server using `socket.io`. To support multiple backend instances, a Redis Socket.io Adapter is used so we can send updates to users connected to a different one.
 2. After adding / changing any elements in the whiteboard, the client sends the changes to the server.
 3. The server updates the state of the whiteboard in the MongoDB Database.
 4. The change is broadcasted to all other clients in the room to update their whiteboards.

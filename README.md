@@ -37,7 +37,7 @@
 * User-friendly interface
 * Save and export sketches
 * Responsive design for various devices
-* Pencil, Eraser, Rectangle, Text and Line Tools
+* Pencil, Eraser, Rectangle, Circle, Text and Line Tools
 
 ## Contributors
 

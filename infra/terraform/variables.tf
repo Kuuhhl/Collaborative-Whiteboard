@@ -53,7 +53,7 @@ variable "github_oidc_provider_id" {
 variable "aws_region" {
   type        = string
   description = "AWS region for the S3 bucket."
-  default     = "eu-central-1"
+  default     = "eu-west-1"
 }
 
 variable "frontend_bucket_name" {

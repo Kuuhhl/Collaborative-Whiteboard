@@ -1,4 +1,4 @@
-# --- custom domain: backend.whiteboard.landmann.ph ---------------------------
+# --- custom domain: backend-whiteboard.landmann.ph ---------------------------
 # before provisioning, the domain has to be verified in google search console.
 
 resource "google_cloud_run_domain_mapping" "backend" {
@@ -47,4 +47,3 @@ resource "cloudflare_ruleset" "backend_waf" {
     }
   ]
 }
-

@@ -27,7 +27,7 @@ variable "frontend_base_url" {
 variable "backend_domain" {
   type        = string
   description = "Custom domain served by the backend Cloud Run service."
-  default     = "backend.whiteboard.landmann.ph"
+  default     = "backend-whiteboard.landmann.ph"
 }
 
 variable "github_repository" {
@@ -53,7 +53,7 @@ variable "github_oidc_provider_id" {
 variable "aws_region" {
   type        = string
   description = "AWS region for the S3 bucket."
-  default     = "eu-west-1"
+  default     = "eu-central-1"
 }
 
 variable "frontend_bucket_name" {
@@ -70,7 +70,7 @@ variable "frontend_domain" {
 
 variable "acm_certificate_domain" {
   type        = string
-  description = "Domain name of the existing (shared, out-of-band) ACM certificate to look up. Must cover frontend_domain."
+  description = "Domain name of the existing ACM certificate to look up. Must cover frontend_domain."
   default     = "landmann.ph"
 }
 

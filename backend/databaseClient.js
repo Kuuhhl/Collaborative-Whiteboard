@@ -5,7 +5,7 @@ import { MongoClient } from "mongodb";
 export default class DatabaseClient {
   constructor(url, dbName) {
     this.client = new MongoClient(url);
-    this.dbName = this.dbName;
+    this.dbName = dbName;
     this.db = null;
   }
 

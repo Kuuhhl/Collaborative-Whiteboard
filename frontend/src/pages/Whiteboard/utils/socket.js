@@ -26,7 +26,7 @@ export const listenToUpdateMessage = () => {
 
 	socket.on("update", (payload) => {
 		store.dispatch(
-			updateOrSetElements({ payload: payload, myOwnChange: false })
+			updateOrSetElements({ payload: payload, myOwnChange: false }),
 		);
 	});
 };

@@ -1,0 +1,17 @@
+{
+	"name": "collaborative-whiteboard",
+	"private": true,
+	"scripts": {
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.{js,jsx,ts,tsx,json,jsonc,css}": "biome format --write"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.15",
+		"husky": "^9.1.7",
+		"lint-staged": "^17.6.0"
+	}
+}

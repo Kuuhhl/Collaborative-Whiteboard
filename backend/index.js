@@ -40,7 +40,7 @@ app.use(express.json());
 // Initialize database client
 const db_client = new DatabaseClient(
 	process.env.MONGO_DB_URL,
-	process.env.MONGO_DB_NAME
+	process.env.MONGO_DB_NAME,
 );
 await db_client.connect();
 
@@ -73,7 +73,7 @@ const pubClient = new Redis({
 });
 
 console.log(
-	`Connecting to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+	`Connecting to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
 );
 pubClient.on("connect", () => {
 	console.log("Connected to Redis");
@@ -96,7 +96,7 @@ app.post("/createRoom", handleCreateRoom);
 server.listen(39291, () => {
 	const addr = server.address();
 	console.log(
-		`server running at ws://${addr.address}:${addr.port}/ / http://${addr.address}:${addr.port}/`
+		`server running at ws://${addr.address}:${addr.port}/ / http://${addr.address}:${addr.port}/`,
 	);
 });
 

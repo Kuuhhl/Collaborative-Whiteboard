@@ -28,7 +28,7 @@ const Whiteboard = () => {
 	const [error, setError] = useState({ visible: false, message: "" });
 	const [cursor, setCursor] = useState(null);
 	const [loadingStatus, setLoadingStatus] = useState(
-		"Loading Whiteboard Elements..."
+		"Loading Whiteboard Elements...",
 	);
 
 	// get room code
@@ -54,7 +54,7 @@ const Whiteboard = () => {
 				const elements = JSON.parse(localStorage.getItem("elements"));
 				if (elements && elements !== "") {
 					dispatch(
-						updateOrSetElements({ payload: elements, myOwnChange: false })
+						updateOrSetElements({ payload: elements, myOwnChange: false }),
 					);
 				}
 				setLoadingStatus("");
@@ -63,17 +63,14 @@ const Whiteboard = () => {
 
 			// online
 			try {
-				const response = await fetch(
-					window.BACKEND_BASE_URL + "/joinRoom",
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({ roomCode: room }),
-						credentials: "include",
-					}
-				);
+				const response = await fetch(window.BACKEND_BASE_URL + "/joinRoom", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ roomCode: room }),
+					credentials: "include",
+				});
 				if (!response.ok) {
 					// redirect to home page, with
 					// error message in query params
@@ -87,7 +84,7 @@ const Whiteboard = () => {
 					updateOrSetElements({
 						payload: data.elements,
 						myOwnChange: false,
-					})
+					}),
 				);
 
 				setLoadingStatus("Connecting to Server...");
@@ -206,9 +203,7 @@ const Whiteboard = () => {
 			});
 
 			setSelectedElement(element);
-			dispatch(
-				updateOrSetElements({ payload: element, myOwnChange: true })
-			);
+			dispatch(updateOrSetElements({ payload: element, myOwnChange: true }));
 		} else if (toolType === toolTypes.TEXT) {
 			const input = document.createElement("input");
 			input.style.position = "absolute";
@@ -226,9 +221,7 @@ const Whiteboard = () => {
 				});
 				setSelectedElement(element);
 
-				dispatch(
-					updateOrSetElements({ payload: element, myOwnChange: true })
-				);
+				dispatch(updateOrSetElements({ payload: element, myOwnChange: true }));
 				document.body.removeChild(input);
 				document.removeEventListener("mousedown", handleOutsideClick);
 			};
@@ -278,9 +271,7 @@ const Whiteboard = () => {
 
 		if (action === actions.DRAWING) {
 			// find index of selected element
-			const index = elements.findIndex(
-				(el) => el.id === selectedElement.id
-			);
+			const index = elements.findIndex((el) => el.id === selectedElement.id);
 
 			if (index !== -1) {
 				updateElement(
@@ -293,7 +284,7 @@ const Whiteboard = () => {
 						y2: clientY,
 						type: elements[index].type,
 					},
-					elements
+					elements,
 				);
 			}
 		}
@@ -371,8 +362,7 @@ const Whiteboard = () => {
 			{elements.length > 0 && (
 				<button
 					onClick={() => {
-						const canvas =
-							document.getElementById("whiteboard-canvas");
+						const canvas = document.getElementById("whiteboard-canvas");
 						const tempCanvas = document.createElement("canvas");
 						tempCanvas.width = canvas.width;
 						tempCanvas.height = canvas.height;

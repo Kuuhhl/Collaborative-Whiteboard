@@ -22,7 +22,7 @@ const whiteboardSlice = createSlice({
 			const { payload, myOwnChange = true } = action.payload;
 			const updateOrAddElement = (payloadElement) => {
 				const index = state.elements.findIndex(
-					(element) => element.id === payloadElement.id
+					(element) => element.id === payloadElement.id,
 				);
 				if (index !== -1) {
 					state.elements[index] = payloadElement;
@@ -42,10 +42,7 @@ const whiteboardSlice = createSlice({
 			}
 
 			if (state.offline_mode) {
-				localStorage.setItem(
-					"elements",
-					JSON.stringify(state.elements)
-				);
+				localStorage.setItem("elements", JSON.stringify(state.elements));
 			}
 		},
 		clearElements: (state) => {

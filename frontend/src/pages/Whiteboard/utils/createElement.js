@@ -29,6 +29,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				y1,
 				x2,
 				y2,
+				revision: 1,
 			};
 		case toolTypes.CIRCLE:
 			roughElement = generateCircle({ x1, y1, x2, y2 });
@@ -40,6 +41,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				y1,
 				x2,
 				y2,
+				revision: 1,
 			};
 		case toolTypes.LINE:
 			roughElement = generateLine({ x1, x2, y1, y2 });
@@ -51,12 +53,14 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				y1,
 				x2,
 				y2,
+				revision: 1,
 			};
 		case toolTypes.PENCIL:
 			return {
 				id,
 				type: toolType,
 				points: [{ x: x1, y: y1 }],
+				revision: 1,
 			};
 		case toolTypes.TEXT:
 			return {
@@ -65,12 +69,14 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				x1,
 				y1,
 				text: text,
+				revision: 1,
 			};
 		case toolTypes.ERASER:
 			return {
 				id,
 				type: toolType,
 				points: [{ x: x1, y: y1 }],
+				revision: 1,
 			};
 		default:
 			throw new Error("Something went wrong when creating element");

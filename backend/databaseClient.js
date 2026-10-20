@@ -22,7 +22,11 @@ export default class DatabaseClient {
     // Create indexes
     await this.db.collection("sessions").createIndex({ sessionId: 1 });
     await this.db.collection("rooms").createIndex({ roomCode: 1 });
-    await this.db.collection("elements").createIndex({ sessionId: 1 });
+
+    // enforce no duplicate element entries per room
+    await this.db
+      .collection("elements")
+      .createIndex({ room: 1, id: 1 }, { unique: true });
 
     // auto-timeout sessions older than a day
     await this.db.collection("sessions").createIndex({ createdAt: 1 }, { expireAfterSeconds: 86400 });
@@ -178,28 +182,22 @@ export default class DatabaseClient {
         throw new Error(`Session with ID ${sessionId} not found`);
       }
 
-      // Check if the element already exists
-      const existingElement = await this.db
-        .collection("elements")
-        .findOne({ id: element.id, room: session.room });
+      const revision = element.revision ?? 1;
 
-      if (existingElement) {
-        // If the element exists, override it
-        await this.db
-          .collection("elements")
-          .updateOne(
-            { id: element.id, room: session.room },
-            { $set: element }
-          );
-      } else {
-        // If the element does not exist, add it
-        await this.db
-          .collection("elements")
-          .insertOne({ ...element, room: session.room });
-      }
+      // update if exists, insert if it doesn't ('upsert' combines these).
+      // we filter by latest revision.
+      await this.db.collection("elements").updateOne(
+        { room: session.room, id: element.id, revision: { $lt: revision } },
+        { $set: { ...element, room: session.room, revision } },
+        { upsert: true }
+      );
     } catch (error) {
-      console.error(`Error adding or updating element: ${error}`);
-      throw error;
+      // 11000 is a duplicate-key error: an older revision was
+      // rejected by the unique { room, id } index. Safe to ignore.
+      if (error.code !== 11000) {
+        console.error(`Error adding or updating element: ${error}`);
+        throw error;
+      }
     }
   }
 }

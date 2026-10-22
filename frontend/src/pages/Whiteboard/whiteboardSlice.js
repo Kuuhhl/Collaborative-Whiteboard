@@ -41,6 +41,12 @@ const whiteboardSlice = createSlice({
 				}
 			}
 
+			// stable ordering (localeCompare compares uuid strings as a tiebreaker;
+			// in case both order numbers are same)
+			state.elements.sort(
+				(a, b) => a.order - b.order || a.id.localeCompare(b.id),
+			);
+
 			if (state.offline_mode) {
 				localStorage.setItem("elements", JSON.stringify(state.elements));
 			}

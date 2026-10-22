@@ -180,22 +180,36 @@ export default class DatabaseClient {
 
 			const revision = element.revision ?? 1;
 
-			// update if exists, insert if it doesn't ('upsert' combines these).
-			// we filter by latest revision.
-			await this.db
-				.collection("elements")
-				.updateOne(
-					{ room: session.room, id: element.id, revision: { $lt: revision } },
-					{ $set: { ...element, room: session.room, revision } },
-					{ upsert: true },
-				);
+			const incoming = { ...element, room: session.room, revision };
+
+			const incomingIsNewer = {
+				$gt: [{ $literal: revision }, { $ifNull: ["$revision", 0] }],
+			};
+
+			// $$ROOT is the stored document; we merge incoming fields over it.
+			const updatedElement = {
+				$mergeObjects: ["$$ROOT", { $literal: incoming }],
+			};
+
+			// keep only newest revision
+			await this.db.collection("elements").updateOne(
+				{ room: session.room, id: element.id },
+				[
+					{
+						$replaceWith: {
+							$cond: {
+								if: incomingIsNewer,
+								then: updatedElement,
+								else: "$$ROOT",
+							},
+						},
+					},
+				],
+				{ upsert: true },
+			);
 		} catch (error) {
-			// 11000 is a duplicate-key error: an older revision was
-			// rejected by the unique { room, id } index. Safe to ignore.
-			if (error.code !== 11000) {
-				console.error(`Error adding or updating element: ${error}`);
-				throw error;
-			}
+			console.error(`Error adding or updating element: ${error}`);
+			throw error;
 		}
 	}
 }

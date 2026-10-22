@@ -20,6 +20,7 @@ export const updateElement = (
 					x2,
 					y2,
 					toolType: type,
+					order: elements[index].order,
 				}),
 				revision: elements[index].revision + 1,
 			};

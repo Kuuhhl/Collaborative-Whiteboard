@@ -15,7 +15,16 @@ const generateLine = ({ x1, y1, x2, y2 }) => {
 	return generator.line(x1, y1, x2, y2);
 };
 
-export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
+export const createElement = ({
+	x1,
+	y1,
+	x2,
+	y2,
+	toolType,
+	id,
+	text,
+	order,
+}) => {
 	let roughElement;
 
 	switch (toolType) {
@@ -29,6 +38,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				y1,
 				x2,
 				y2,
+				order,
 				revision: 1,
 			};
 		case toolTypes.CIRCLE:
@@ -41,6 +51,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				y1,
 				x2,
 				y2,
+				order,
 				revision: 1,
 			};
 		case toolTypes.LINE:
@@ -53,6 +64,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				y1,
 				x2,
 				y2,
+				order,
 				revision: 1,
 			};
 		case toolTypes.PENCIL:
@@ -60,6 +72,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				id,
 				type: toolType,
 				points: [{ x: x1, y: y1 }],
+				order,
 				revision: 1,
 			};
 		case toolTypes.TEXT:
@@ -69,6 +82,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				x1,
 				y1,
 				text: text,
+				order,
 				revision: 1,
 			};
 		case toolTypes.ERASER:
@@ -76,6 +90,7 @@ export const createElement = ({ x1, y1, x2, y2, toolType, id, text }) => {
 				id,
 				type: toolType,
 				points: [{ x: x1, y: y1 }],
+				order,
 				revision: 1,
 			};
 		default:

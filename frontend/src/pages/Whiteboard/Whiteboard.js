@@ -200,6 +200,7 @@ const Whiteboard = () => {
 				y2: clientY,
 				toolType,
 				id: uuid(),
+				order: elements.length,
 			});
 
 			setSelectedElement(element);
@@ -217,6 +218,7 @@ const Whiteboard = () => {
 					y1: clientY,
 					toolType,
 					id: uuid(),
+					order: elements.length,
 					text: input.value,
 				});
 				setSelectedElement(element);

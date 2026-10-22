@@ -276,18 +276,14 @@ const Whiteboard = () => {
 			const index = elements.findIndex((el) => el.id === selectedElement.id);
 
 			if (index !== -1) {
-				updateElement(
-					{
-						index,
-						id: elements[index].id,
-						x1: elements[index].x1,
-						y1: elements[index].y1,
-						x2: clientX,
-						y2: clientY,
-						type: elements[index].type,
-					},
-					elements,
-				);
+				updateElement({
+					id: elements[index].id,
+					x1: elements[index].x1,
+					y1: elements[index].y1,
+					x2: clientX,
+					y2: clientY,
+					type: elements[index].type,
+				});
 			}
 		}
 	};

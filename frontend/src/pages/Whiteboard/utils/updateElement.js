@@ -3,10 +3,11 @@ import { toolTypes } from "../../../constants";
 import { store } from "../../../store/store";
 import { updateOrSetElements } from "../whiteboardSlice";
 
-export const updateElement = (
-	{ id, x1, x2, y1, y2, type, index },
-	elements,
-) => {
+export const updateElement = ({ id, x1, x2, y1, y2, type }) => {
+	// current element fetched directly from redux
+	const elements = store.getState().whiteboard.elements;
+	const index = elements.findIndex((element) => element.id === id);
+	if (index === -1) return;
 	let updatedElement;
 	switch (type) {
 		case toolTypes.LINE:

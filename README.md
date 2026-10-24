@@ -20,8 +20,9 @@
   </a>
 </div>
 
+## Demo Video
 
-
+![Demo Video](demo.gif)
 
 ## Screenshots
 
